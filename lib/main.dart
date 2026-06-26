@@ -3,9 +3,9 @@ import 'package:provider/provider.dart';
 import 'core/services/service_locator.dart';
 import 'core/services/auth_service.dart';
 import 'core/theme/app_theme.dart';
-import 'screens/login_screen.dart';
-import 'screens/student/student_dashboard.dart';
-import 'screens/teacher/teacher_dashboard.dart';
+import 'views/login_screen.dart';
+import 'views/student/student_dashboard.dart';
+import 'views/teacher/teacher_dashboard.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();

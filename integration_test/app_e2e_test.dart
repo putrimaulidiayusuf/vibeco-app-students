@@ -3,9 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:vibeco_app/main.dart';
 import 'package:vibeco_app/core/services/service_locator.dart';
-import 'package:vibeco_app/screens/login_screen.dart';
-import 'package:vibeco_app/screens/student/student_dashboard.dart';
-import 'package:vibeco_app/screens/teacher/teacher_dashboard.dart';
+import 'package:vibeco_app/views/login_screen.dart';
+import 'package:vibeco_app/views/student/student_dashboard.dart';
+import 'package:vibeco_app/views/teacher/teacher_dashboard.dart';
 import 'mock_services.dart';
 
 void main() {

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/services/auth_service.dart';
-import '../../core/services/api_service.dart';
 import '../../core/models/ranking_model.dart';
+import '../../viewmodels/student/clean_rank_viewmodel.dart';
 
 class CleanRankScreen extends StatefulWidget {
   const CleanRankScreen({super.key});
@@ -13,22 +13,21 @@ class CleanRankScreen extends StatefulWidget {
 }
 
 class _CleanRankScreenState extends State<CleanRankScreen> with SingleTickerProviderStateMixin {
-  final _apiService = ApiService();
   late TabController _tabController;
-
-  List<ClassRanking> _dailyRankings = [];
-  List<ClassRanking> _weeklyRankings = [];
-  List<ClassRanking> _monthlyRankings = [];
-
-  bool _isLoading = true;
-  String? _error;
+  CleanRankViewModel? _viewModel;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(_handleTabSelection);
-    _fetchRankings();
+    
+    // Initial fetch after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _viewModel != null) {
+        _fetchRankingsForTab();
+      }
+    });
   }
 
   @override
@@ -39,8 +38,8 @@ class _CleanRankScreenState extends State<CleanRankScreen> with SingleTickerProv
   }
 
   void _handleTabSelection() {
-    if (_tabController.indexIsChanging) {
-      _fetchRankings();
+    if (_tabController.indexIsChanging && _viewModel != null) {
+      _fetchRankingsForTab();
     }
   }
 
@@ -55,38 +54,13 @@ class _CleanRankScreenState extends State<CleanRankScreen> with SingleTickerProv
     }
   }
 
-  Future<void> _fetchRankings() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+  Future<void> _fetchRankingsForTab() async {
+    final auth = Provider.of<AuthService>(context, listen: false);
+    final token = auth.token;
+    if (token == null || _viewModel == null) return;
 
-    try {
-      final auth = Provider.of<AuthService>(context, listen: false);
-      final token = auth.token;
-      if (token == null) return;
-
-      final interval = _getInterval();
-      final data = await _apiService.getRankings(token, interval);
-
-      setState(() {
-        if (interval == 'daily') {
-          _dailyRankings = data;
-        } else if (interval == 'weekly') {
-          _weeklyRankings = data;
-        } else {
-          _monthlyRankings = data;
-        }
-      });
-    } catch (e) {
-      setState(() {
-        _error = e.toString().replaceAll('Exception: ', '');
-      });
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
+    final interval = _getInterval();
+    await _viewModel!.fetchRankings(token, interval);
   }
 
   Widget _buildPodiumItem({
@@ -202,8 +176,8 @@ class _CleanRankScreenState extends State<CleanRankScreen> with SingleTickerProv
     );
   }
 
-  Widget _buildRankingList(List<ClassRanking> rankings, String? currentUserClass) {
-    if (_isLoading && rankings.isEmpty) {
+  Widget _buildRankingList(CleanRankViewModel viewModel, List<ClassRanking> rankings, String? currentUserClass) {
+    if (viewModel.isLoading && rankings.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
 
@@ -232,7 +206,7 @@ class _CleanRankScreenState extends State<CleanRankScreen> with SingleTickerProv
     final listItems = rankings.length > 3 ? rankings.sublist(3) : <ClassRanking>[];
 
     return RefreshIndicator(
-      onRefresh: _fetchRankings,
+      onRefresh: _fetchRankingsForTab,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16.0),
@@ -312,51 +286,61 @@ class _CleanRankScreenState extends State<CleanRankScreen> with SingleTickerProv
     final auth = Provider.of<AuthService>(context);
     final currentUserClass = auth.user?.className;
 
-    return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(kToolbarHeight),
-        child: Container(
-          color: Colors.white,
-          child: TabBar(
-            controller: _tabController,
-            labelColor: AppTheme.primaryGreen,
-            unselectedLabelColor: Colors.grey,
-            indicatorColor: AppTheme.primaryGreen,
-            tabs: const [
-              Tab(text: 'Harian'),
-              Tab(text: 'Mingguan'),
-              Tab(text: 'Bulanan'),
-            ],
-          ),
-        ),
-      ),
-      body: _error != null
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.error_outline_rounded, size: 48, color: AppTheme.error),
-                    const SizedBox(height: 12),
-                    Text(_error!, textAlign: TextAlign.center, style: const TextStyle(color: AppTheme.error)),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: _fetchRankings,
-                      child: const Text('Coba Lagi'),
-                    ),
+    return ChangeNotifierProvider<CleanRankViewModel>(
+      create: (context) => CleanRankViewModel(),
+      child: Consumer<CleanRankViewModel>(
+        builder: (context, viewModel, child) {
+          _viewModel = viewModel;
+
+          return Scaffold(
+            appBar: PreferredSize(
+              preferredSize: const Size.fromHeight(kToolbarHeight),
+              child: Container(
+                color: Colors.white,
+                child: TabBar(
+                  controller: _tabController,
+                  labelColor: AppTheme.primaryGreen,
+                  unselectedLabelColor: Colors.grey,
+                  indicatorColor: AppTheme.primaryGreen,
+                  tabs: const [
+                    Tab(text: 'Harian'),
+                    Tab(text: 'Mingguan'),
+                    Tab(text: 'Bulanan'),
                   ],
                 ),
               ),
-            )
-          : TabBarView(
-              controller: _tabController,
-              children: [
-                _buildRankingList(_dailyRankings, currentUserClass),
-                _buildRankingList(_weeklyRankings, currentUserClass),
-                _buildRankingList(_monthlyRankings, currentUserClass),
-              ],
             ),
+            body: viewModel.error != null
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.error_outline_rounded, size: 48, color: AppTheme.error),
+                          const SizedBox(height: 12),
+                          Text(viewModel.error!, textAlign: TextAlign.center, style: const TextStyle(color: AppTheme.error)),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: _fetchRankingsForTab,
+                            child: const Text('Coba Lagi'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildRankingList(viewModel, viewModel.dailyRankings, currentUserClass),
+                      _buildRankingList(viewModel, viewModel.weeklyRankings, currentUserClass),
+                      _buildRankingList(viewModel, viewModel.monthlyRankings, currentUserClass),
+                    ],
+                  ),
+          );
+        },
+      ),
     );
   }
 }
+

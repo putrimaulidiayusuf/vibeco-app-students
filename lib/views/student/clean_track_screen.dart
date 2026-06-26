@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/services/auth_service.dart';
-import '../../core/services/api_service.dart';
-import '../../core/models/submission_model.dart';
 import '../../core/config/app_config.dart';
+import '../../viewmodels/student/clean_track_viewmodel.dart';
 
 class CleanTrackScreen extends StatefulWidget {
   const CleanTrackScreen({super.key});
@@ -14,43 +13,6 @@ class CleanTrackScreen extends StatefulWidget {
 }
 
 class _CleanTrackScreenState extends State<CleanTrackScreen> {
-  final _apiService = ApiService();
-  List<PiketSubmission> _submissions = [];
-  bool _isLoading = true;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchHistory();
-  }
-
-  Future<void> _fetchHistory() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      final auth = Provider.of<AuthService>(context, listen: false);
-      final token = auth.token;
-      if (token == null) return;
-
-      final data = await _apiService.getSubmissions(token);
-      setState(() {
-        _submissions = data;
-      });
-    } catch (e) {
-      setState(() {
-        _error = e.toString().replaceAll('Exception: ', '');
-      });
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
   Widget _buildStatusBadge(String status) {
     Color color;
     String text;
@@ -93,103 +55,122 @@ class _CleanTrackScreenState extends State<CleanTrackScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading && _submissions.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
-    }
+    final auth = Provider.of<AuthService>(context, listen: false);
+    final token = auth.token;
 
-    return RefreshIndicator(
-      onRefresh: _fetchHistory,
-      child: _error != null
-          ? ListView(
-              children: [
-                SizedBox(height: MediaQuery.of(context).size.height * 0.3),
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      children: [
-                        const Icon(Icons.error_outline_rounded, size: 48, color: AppTheme.error),
-                        const SizedBox(height: 12),
-                        Text(_error!, textAlign: TextAlign.center, style: const TextStyle(color: AppTheme.error)),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: _fetchHistory,
-                          child: const Text('Coba Lagi'),
+    return ChangeNotifierProvider<CleanTrackViewModel>(
+      create: (context) {
+        final vm = CleanTrackViewModel();
+        if (token != null) {
+          vm.fetchHistory(token);
+        }
+        return vm;
+      },
+      child: Consumer<CleanTrackViewModel>(
+        builder: (context, viewModel, child) {
+          if (viewModel.isLoading && viewModel.submissions.isEmpty) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          return RefreshIndicator(
+            onRefresh: () async {
+              if (token != null) {
+                await viewModel.fetchHistory(token);
+              }
+            },
+            child: viewModel.error != null
+                ? ListView(
+                    children: [
+                      SizedBox(height: MediaQuery.of(context).size.height * 0.3),
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24.0),
+                          child: Column(
+                            children: [
+                              const Icon(Icons.error_outline_rounded, size: 48, color: AppTheme.error),
+                              const SizedBox(height: 12),
+                              Text(viewModel.error!, textAlign: TextAlign.center, style: const TextStyle(color: AppTheme.error)),
+                              const SizedBox(height: 16),
+                              ElevatedButton(
+                                onPressed: () {
+                                  if (token != null) viewModel.fetchHistory(token);
+                                },
+                                child: const Text('Coba Lagi'),
+                              ),
+                            ],
+                          ),
                         ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            )
-          : _submissions.isEmpty
-              ? ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  children: [
-                    SizedBox(height: MediaQuery.of(context).size.height * 0.25),
-                    const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.history_rounded, size: 64, color: Colors.grey),
-                          SizedBox(height: 16),
-                          Text(
-                            'Belum ada riwayat piket.',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black54),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'Lakukan piket kelas hari ini dan unggah fotonya!',
-                            style: TextStyle(fontSize: 13, color: Colors.grey),
-                          ),
-                        ],
                       ),
-                    ),
-                  ],
-                )
-              : ListView.builder(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  itemCount: _submissions.length,
-                  itemBuilder: (context, index) {
-                    final sub = _submissions[index];
-                    final displayScore = sub.displayScore;
-
-                    return Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    ],
+                  )
+                : viewModel.submissions.isEmpty
+                    ? ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: [
+                          SizedBox(height: MediaQuery.of(context).size.height * 0.25),
+                          const Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      sub.date,
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                    ),
-                                    if (sub.submittedBy != null)
-                                      Text(
-                                        'Oleh: ${sub.submittedBy}',
-                                        style: const TextStyle(fontSize: 12, color: Colors.grey),
-                                      ),
-                                  ],
+                                Icon(Icons.history_rounded, size: 64, color: Colors.grey),
+                                SizedBox(height: 16),
+                                Text(
+                                  'Belum ada riwayat piket.',
+                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black54),
                                 ),
-                                _buildStatusBadge(sub.status),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Lakukan piket kelas hari ini dan unggah fotonya!',
+                                  style: TextStyle(fontSize: 13, color: Colors.grey),
+                                ),
                               ],
                             ),
-                            const Divider(height: 24),
+                          ),
+                        ],
+                      )
+                    : ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        itemCount: viewModel.submissions.length,
+                        itemBuilder: (context, index) {
+                          final sub = viewModel.submissions[index];
+                          final displayScore = sub.displayScore;
 
-                            // Photo preview gallery row
-                            if (sub.photoUrls.isNotEmpty) ...[
-                              SizedBox(
-                                height: 80,
-                                child: ListView.builder(
-                                  scrollDirection: Axis.horizontal,
-                                  itemCount: sub.photoUrls.length,
-                                  itemBuilder: (context, pIndex) {
+                          return Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            sub.date,
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                          ),
+                                          if (sub.submittedBy != null)
+                                            Text(
+                                              'Oleh: ${sub.submittedBy}',
+                                              style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                            ),
+                                        ],
+                                      ),
+                                      _buildStatusBadge(sub.status),
+                                    ],
+                                  ),
+                                  const Divider(height: 24),
+
+                                  // Photo preview gallery row
+                                  if (sub.photoUrls.isNotEmpty) ...[
+                                    SizedBox(
+                                      height: 80,
+                                      child: ListView.builder(
+                                        scrollDirection: Axis.horizontal,
+                                        itemCount: sub.photoUrls.length,
+                                        itemBuilder: (context, pIndex) {
                                     final path = sub.photoUrls[pIndex];
                                     // Handle relative vs absolute URLs
                                     final imageUrl = path.startsWith('http') 
@@ -338,6 +319,9 @@ class _CleanTrackScreenState extends State<CleanTrackScreen> {
                     );
                   },
                 ),
+          );
+        },
+      ),
     );
   }
 }
