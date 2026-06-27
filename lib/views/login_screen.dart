@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../core/theme/app_theme.dart';
 import '../core/services/auth_service.dart';
 import '../viewmodels/login_viewmodel.dart';
+import '../main.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -63,19 +64,6 @@ class _LoginScreenState extends State<LoginScreen>
       ),
     );
 
-    for (int i = 0; i < 7; i++) {
-      final start = 0.55 + (i * 0.06);
-      final end = (start + 0.12).clamp(0.0, 1.0);
-      _fields.add(
-        Tween<double>(begin: 0.0, end: 1.0).animate(
-          CurvedAnimation(
-            parent: _ctrl,
-            curve: Interval(start, end, curve: Curves.easeOutCubic),
-          ),
-        ),
-      );
-    }
-
     Future.delayed(const Duration(milliseconds: 150), () {
       if (mounted) _ctrl.forward();
     });
@@ -107,6 +95,9 @@ class _LoginScreenState extends State<LoginScreen>
             content: Text('Selamat datang, ${user?.name ?? ""}!'),
             backgroundColor: AppTheme.success,
           ),
+        );
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const AuthGate()),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -188,7 +179,7 @@ class _LoginScreenState extends State<LoginScreen>
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.12 + (pCard * 0.08)),
+                            color: Colors.black.withValues(alpha: 0.12 + (pCard * 0.08)),
                             blurRadius: 20 + (pCard * 20),
                             offset: const Offset(0, 15),
                             spreadRadius: 2,

@@ -2,7 +2,7 @@ class AppConfig {
   // Use 10.0.2.2 for Android emulator (maps to host localhost),
   // localhost for iOS simulator and web
   static String get baseUrl {
-    return 'http://10.140.167.212:8000';
+    return 'https://smartclean.smkn1cianjur.sch.id';
   }
 
   static const String apiVersion = '/api';

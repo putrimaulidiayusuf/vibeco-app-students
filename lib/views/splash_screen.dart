@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
-import 'login_screen.dart';
+import '../main.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -35,13 +35,13 @@ class _SplashScreenState extends State<SplashScreen>
 
     _ctrl.forward();
 
-    // Pindah ke login setelah 2.6 detik (biar user sempat lihat logo)
+    // Pindah ke AuthGate setelah 2.6 detik (biar user sempat lihat logo)
     Future.delayed(const Duration(milliseconds: 2600), () {
       if (mounted) {
         Navigator.of(context).pushReplacement(
           PageRouteBuilder(
-            pageBuilder: (_, __, ___) => const LoginScreen(),
-            transitionsBuilder: (_, anim, __, child) {
+            pageBuilder: (_, _, _) => const AuthGate(),
+            transitionsBuilder: (_, anim, _, child) {
               return FadeTransition(
                 opacity: CurvedAnimation(
                   parent: anim,
