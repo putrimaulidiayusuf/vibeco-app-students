@@ -22,8 +22,6 @@ class ApiService {
 
   /// Authenticate user and return token & user details.
   Future<Map<String, dynamic>> login(String identifier, String password) async {
-    final url = AppConfig.buildUrl('/login');
-    
     // Determine the key based on the identifier format:
     String key;
     if (identifier.contains('@')) {
@@ -33,6 +31,9 @@ class ApiService {
     } else {
       key = 'nis';
     }
+
+    final endpoint = (key == 'nis') ? '/student/login' : '/teacher/login';
+    final url = AppConfig.buildUrl(endpoint);
 
     final response = await locator.httpService.post(
       url,
@@ -307,8 +308,8 @@ class ApiService {
       body: jsonEncode({
         'submission_id': submissionId,
         'status': status,
-        'score': ?score,
-        'notes': ?notes,
+        'score': score,
+        'notes': notes,
       }),
     );
 

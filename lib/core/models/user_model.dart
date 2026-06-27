@@ -37,12 +37,18 @@ class User {
       roleType: json['role_type']?.toString(),
       nis: json['nis']?.toString(),
       nip: json['nip']?.toString(),
-      className: json['class_name']?.toString() ?? json['class']?.toString(),
-      classId: json['class_id'] != null
-          ? (json['class_id'] is int
-              ? json['class_id']
-              : int.tryParse(json['class_id'].toString()))
-          : null,
+      className: json['school_class_name']?.toString() ??
+          json['class_name']?.toString() ??
+          json['class']?.toString(),
+      classId: json['school_class_id'] != null
+          ? (json['school_class_id'] is int
+              ? json['school_class_id']
+              : int.tryParse(json['school_class_id'].toString()))
+          : json['class_id'] != null
+              ? (json['class_id'] is int
+                  ? json['class_id']
+                  : int.tryParse(json['class_id'].toString()))
+              : null,
       email: json['email']?.toString(),
       avatar: json['avatar']?.toString(),
     );
