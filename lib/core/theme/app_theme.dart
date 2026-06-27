@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
+import 'app_colors.dart';
 
 class AppTheme {
   // ─── Brand Colors ───
-  static const Color primaryGreen = Color(0xFF2E7D32);
-  static const Color primaryDark = Color(0xFF1B5E20);
-  static const Color primaryLight = Color(0xFF4CAF50);
+  static const Color primaryGreen = AppColors.primaryGreen;
+  static const Color primaryDark = AppColors.primaryDark;
+  static const Color primaryLight = AppColors.primaryLight;
   static const Color secondaryGreen = Color(0xFF81C784);
   static const Color accentGreen = Color(0xFFA5D6A7);
   static const Color surfaceGreen = Color(0xFFF1F8E9);
   static const Color backgroundGreen = Color(0xFFFAFDF7);
   static const Color cardColor = Colors.white;
+
+  // ─── Emerald Colors (new brand palette) ───
+  static const Color emeraldDark = AppColors.emeraldDark;
+  static const Color emeraldMid = AppColors.emeraldMid;
 
   // Status colors
   static const Color success = Color(0xFF43A047);
@@ -29,11 +34,7 @@ class AppTheme {
     colors: [Color(0xFF2E7D32), Color(0xFF43A047), Color(0xFF66BB6A)],
   );
 
-  static const LinearGradient loginGradient = LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: [Color(0xFF1B5E20), Color(0xFF2E7D32), Color(0xFF388E3C)],
-  );
+  static const LinearGradient loginGradient = AppColors.emeraldGradient;
 
   static const LinearGradient cardGradient = LinearGradient(
     begin: Alignment.topLeft,

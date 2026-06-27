@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:provider/provider.dart';
+import 'package:vibeco_app/views/splash_screen.dart';
 import 'core/services/service_locator.dart';
 import 'core/services/auth_service.dart';
 import 'core/theme/app_theme.dart';
@@ -8,7 +10,8 @@ import 'views/student/student_dashboard.dart';
 import 'views/teacher/teacher_dashboard.dart';
 
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   // Ensure the service locator is configured
   locator.reset(); 
   runApp(
@@ -28,7 +31,7 @@ class MainApp extends StatelessWidget {
       title: 'ZieClean',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const AuthGate(),
+      home: const SplashScreen(),//AuthGate(),
     );
   }
 }
