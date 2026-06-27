@@ -3,8 +3,10 @@ import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/services/auth_service.dart';
 import 'smart_check_screen.dart';
-import 'clean_track_screen.dart';
+import 'praba_ai_screen.dart';
+import 'camera_upload_screen.dart';
 import 'clean_rank_screen.dart';
+import 'profile_screen.dart';
 
 class StudentDashboard extends StatefulWidget {
   const StudentDashboard({super.key});
@@ -16,11 +18,40 @@ class StudentDashboard extends StatefulWidget {
 class _StudentDashboardState extends State<StudentDashboard> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = const [
-    SmartCheckScreen(),
-    CleanTrackScreen(),
-    CleanRankScreen(),
-  ];
+  late final List<Widget> _screens;
+
+  @override
+  void initState() {
+    super.initState();
+    _screens = [
+      const SmartCheckScreen(),
+      const PrabaAiScreen(),
+      CameraUploadScreen(
+        onViewHistory: () {
+          setState(() => _currentIndex = 0);
+        },
+      ),
+      const CleanRankScreen(),
+      const ProfileScreen(),
+    ];
+  }
+
+  String _getTitle() {
+    switch (_currentIndex) {
+      case 0:
+        return 'SmartCheck';
+      case 1:
+        return 'PRABA AI';
+      case 2:
+        return 'Unggah Foto Piket';
+      case 3:
+        return 'Ranking';
+      case 4:
+        return 'Profil';
+      default:
+        return 'ZieClean';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,69 +70,64 @@ class _StudentDashboardState extends State<StudentDashboard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              user.name,
+              _getTitle(),
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             Text(
-              'Kelas ${user.className ?? "-"}',
+              '${user.name} • Kelas ${user.className ?? "-"}',
               style: const TextStyle(fontSize: 13, color: Colors.white70),
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            key: const ValueKey('logout_button'),
-            icon: const Icon(Icons.logout_rounded),
-            tooltip: 'Keluar',
-            onPressed: () async {
-              final confirm = await showDialog<bool>(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Keluar Aplikasi'),
-                  content: const Text('Apakah Anda yakin ingin keluar dari ZieClean?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      child: const Text('Batal'),
-                    ),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.error,
-                        foregroundColor: Colors.white,
-                      ),
-                      onPressed: () => Navigator.pop(context, true),
-                      child: const Text('Keluar'),
-                    ),
-                  ],
-                ),
-              );
-
-              if (confirm == true && mounted) {
-                await auth.clearSession();
-              }
-            },
-          ),
-        ],
       ),
       body: _screens[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
-        items: const [
-          BottomNavigationBarItem(
+        onTap: (index) {
+          setState(() => _currentIndex = index);
+        },
+        items: [
+          const BottomNavigationBarItem(
             icon: Icon(Icons.check_circle_outline_rounded),
             activeIcon: Icon(Icons.check_circle_rounded),
             label: 'SmartCheck',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.history_rounded),
-            activeIcon: Icon(Icons.history_toggle_off_rounded),
-            label: 'CleanTrack',
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.auto_awesome_outlined),
+            activeIcon: Icon(Icons.auto_awesome),
+            label: 'PRABA AI',
           ),
           BottomNavigationBarItem(
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: AppTheme.primaryGradient,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryGreen.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.camera_alt_rounded,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+            label: 'Kamera',
+          ),
+          const BottomNavigationBarItem(
             icon: Icon(Icons.leaderboard_outlined),
             activeIcon: Icon(Icons.leaderboard_rounded),
-            label: 'CleanRank',
+            label: 'Rank',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline_rounded),
+            activeIcon: Icon(Icons.person_rounded),
+            label: 'Profil',
           ),
         ],
       ),

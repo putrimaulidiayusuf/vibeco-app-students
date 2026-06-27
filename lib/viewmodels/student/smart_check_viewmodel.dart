@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import '../../core/models/settings_model.dart';
 import '../../core/models/piket_team_model.dart';
+import '../../core/models/submission_model.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/service_locator.dart';
 
@@ -51,6 +52,21 @@ class SmartCheckViewModel extends ChangeNotifier {
 
   List<String> _findings = [];
   List<String> get findings => _findings;
+
+  List<PiketSubmission> _weeklySubmissions = [];
+  List<PiketSubmission> get weeklySubmissions => _weeklySubmissions;
+
+  List<PiketTeam> _schedules = [];
+  List<PiketTeam> get schedules => _schedules;
+
+  Map<String, double> _weeklyScores = {
+    'Senin': 0.0,
+    'Selasa': 0.0,
+    'Rabu': 0.0,
+    'Kamis': 0.0,
+    'Jumat': 0.0,
+  };
+  Map<String, double> get weeklyScores => _weeklyScores;
 
   bool get canUpload => _isInsideGeofence && _isWithinTimeWindow && !_isHoliday && _isOnDutyToday;
 
@@ -111,11 +127,92 @@ class SmartCheckViewModel extends ChangeNotifier {
       final isHolidayRegistered = holidays.any((h) => h['date'] == todayDateStr);
       _isHoliday = isSunday || isHolidayRegistered;
 
+      // 6. Fetch schedules to map team members in history
+      try {
+        _schedules = await _apiService.getSchedules(token);
+      } catch (_) {
+        _schedules = [];
+      }
+
+      // 7. Fetch weekly submissions
+      await fetchWeeklyData(token);
+
     } catch (e) {
       _errorMessage = 'Gagal memuat status & konfigurasi: ${e.toString().replaceAll('Exception: ', '')}';
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> fetchWeeklyData(String token) async {
+    try {
+      final allSubmissions = await _apiService.getSubmissions(token);
+
+      // Find current week range (Monday to Sunday)
+      final now = DateTime.now();
+      final currentWeekday = now.weekday; // 1 = Monday, 7 = Sunday
+      final startOfWeek = now.subtract(Duration(days: currentWeekday - 1));
+      // Zero out time
+      final monday = DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day);
+      final sunday = monday.add(const Duration(days: 6, hours: 23, minutes: 59, seconds: 59));
+
+      // Filter submissions for this week
+      _weeklySubmissions = allSubmissions.where((sub) {
+        try {
+          final subDate = DateTime.parse(sub.date);
+          return subDate.isAfter(monday.subtract(const Duration(seconds: 1))) &&
+                 subDate.isBefore(sunday.add(const Duration(seconds: 1)));
+        } catch (_) {
+          return false;
+        }
+      }).toList();
+
+      // Sort weekly submissions by date descending
+      _weeklySubmissions.sort((a, b) => b.date.compareTo(a.date));
+
+      // Reset scores map
+      _weeklyScores = {
+        'Senin': 0.0,
+        'Selasa': 0.0,
+        'Rabu': 0.0,
+        'Kamis': 0.0,
+        'Jumat': 0.0,
+      };
+
+      // Populate scores (Mon-Fri)
+      for (final sub in _weeklySubmissions) {
+        try {
+          final subDate = DateTime.parse(sub.date);
+          final dayName = _getDayNameIndonesian(subDate.weekday);
+          if (_weeklyScores.containsKey(dayName)) {
+            _weeklyScores[dayName] = sub.displayScore.toDouble();
+          }
+        } catch (_) {}
+      }
+    } catch (e) {
+      debugPrint('Error loading weekly scores: $e');
+    }
+  }
+
+  String _getDayNameIndonesian(int weekday) {
+    switch (weekday) {
+      case DateTime.monday:
+        return 'Senin';
+      case DateTime.tuesday:
+        return 'Selasa';
+      case DateTime.wednesday:
+        return 'Rabu';
+      case DateTime.thursday:
+        return 'Kamis';
+      case DateTime.friday:
+        return 'Jumat';
+      case DateTime.saturday:
+        return 'Sabtu';
+      case DateTime.sunday:
+        return 'Minggu';
+      default:
+        return '';
     }
   }
 
