@@ -91,8 +91,9 @@ class ApiService {
     String token,
     List<String> imagePaths,
     double latitude,
-    double longitude,
-  ) async {
+    double longitude, {
+    List<StudentAttendance>? attendance,
+  }) async {
     final url = Uri.parse(AppConfig.buildUrl('/piket/submissions'));
     final request = http.MultipartRequest('POST', url);
 
@@ -103,6 +104,26 @@ class ApiService {
 
     request.fields['latitude'] = latitude.toString();
     request.fields['longitude'] = longitude.toString();
+
+    if (attendance != null && attendance.isNotEmpty) {
+      // 1. JSON String format
+      final List<Map<String, dynamic>> attJson = attendance.map((a) => a.toJson()).toList();
+      request.fields['attendance'] = jsonEncode(attJson);
+      request.fields['attendance_json'] = jsonEncode(attJson);
+
+      // 2. Bracket notation format (Laravel standard)
+      for (int i = 0; i < attendance.length; i++) {
+        final item = attendance[i];
+        request.fields['attendance[$i][student_id]'] = item.studentId.toString();
+        request.fields['attendance[$i][status]'] = item.status;
+        request.fields['attendance[$i][reason]'] = item.reason ?? '';
+
+        // 3. Parallel fields format
+        request.fields['student_ids[$i]'] = item.studentId.toString();
+        request.fields['statuses[$i]'] = item.status;
+        request.fields['reasons[$i]'] = item.reason ?? '';
+      }
+    }
 
     for (int i = 0; i < imagePaths.length; i++) {
       final file = await http.MultipartFile.fromPath('photos[]', imagePaths[i]);
@@ -232,6 +253,41 @@ class ApiService {
       return PiketTeam.fromJson(data as Map<String, dynamic>);
     } else {
       throw Exception('Gagal mengambil tim piket Anda.');
+    }
+  }
+
+  /// Get today's scheduled picket verification details (student).
+  Future<PiketTeam> verifyPiketToday(String token) async {
+    final url = AppConfig.buildUrl('/piket/verify');
+    final response = await locator.httpService.get(
+      url,
+      headers: _getHeaders(token),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return PiketTeam.fromJson(data);
+    } else {
+      throw Exception('Gagal memverifikasi jadwal piket hari ini.');
+    }
+  }
+
+  /// Get current student profile details.
+  Future<User> getStudentProfile(String token) async {
+    final url = AppConfig.buildUrl('/student/profile');
+    final response = await locator.httpService.get(
+      url,
+      headers: _getHeaders(token),
+    );
+
+    if (response.statusCode == 200) {
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      return User.fromJson({
+        ...json,
+        'role': 'student',
+      });
+    } else {
+      throw Exception('Gagal mengambil profil siswa.');
     }
   }
 

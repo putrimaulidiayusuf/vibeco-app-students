@@ -41,6 +41,12 @@ class SmartCheckViewModel extends ChangeNotifier {
   bool _isOnDutyToday = false;
   bool get isOnDutyToday => _isOnDutyToday;
 
+  bool _isAlreadySubmittedToday = false;
+  bool get isAlreadySubmittedToday => _isAlreadySubmittedToday;
+
+  String? _submittedByName;
+  String? get submittedByName => _submittedByName;
+
   String _todayDayName = '';
   String get todayDayName => _todayDayName;
 
@@ -68,13 +74,15 @@ class SmartCheckViewModel extends ChangeNotifier {
   };
   Map<String, double> get weeklyScores => _weeklyScores;
 
-  bool get canUpload => _isInsideGeofence && _isWithinTimeWindow && !_isHoliday && _isOnDutyToday;
+  bool get canUpload => _isInsideGeofence && _isWithinTimeWindow && !_isHoliday && _isOnDutyToday && !_isAlreadySubmittedToday;
 
   Future<void> loadStatusAndConfig(String token) async {
     _isLoading = true;
     _errorMessage = null;
     _aiScore = null;
     _findings = [];
+    _isAlreadySubmittedToday = false;
+    _submittedByName = null;
     notifyListeners();
 
     try {
@@ -82,13 +90,19 @@ class SmartCheckViewModel extends ChangeNotifier {
       _settings = await _apiService.getSettings(token);
       final holidays = await _apiService.getHolidays(token);
 
-      // 2. Get Student's Piket Team for today
+      // 2. Get Student's Piket Team for today from verify API
       _todayDayName = DateFormat('EEEE').format(DateTime.now()); // e.g. "Monday"
       
       try {
-        _myPiketTeam = await _apiService.getMyTeam(token);
+        _myPiketTeam = await _apiService.verifyPiketToday(token);
+        final studentProfile = await _apiService.getStudentProfile(token);
+        final currentNis = studentProfile.nis;
+        final currentId = studentProfile.id;
+
         if (_myPiketTeam != null) {
-          _isOnDutyToday = _myPiketTeam!.day?.toLowerCase() == _todayDayName.toLowerCase();
+          _isOnDutyToday = _myPiketTeam!.members.any((m) => m.nis == currentNis || m.id == currentId);
+        } else {
+          _isOnDutyToday = false;
         }
       } catch (_) {
         _isOnDutyToday = false;
@@ -121,11 +135,11 @@ class SmartCheckViewModel extends ChangeNotifier {
         }
       }
 
-      // 5. Verify Holiday / Sunday
+      // 5. Verify Holiday / Sunday (Sunday is not holiday if student is scheduled to picket today)
       final todayDateStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
       final isSunday = DateTime.now().weekday == DateTime.sunday;
       final isHolidayRegistered = holidays.any((h) => h['date'] == todayDateStr);
-      _isHoliday = isSunday || isHolidayRegistered;
+      _isHoliday = isHolidayRegistered || (isSunday && !_isOnDutyToday);
 
       // 6. Fetch schedules to map team members in history
       try {
@@ -136,6 +150,20 @@ class SmartCheckViewModel extends ChangeNotifier {
 
       // 7. Fetch weekly submissions
       await fetchWeeklyData(token);
+
+      // 8. Check if picket has already been submitted today
+      final todaySub = _weeklySubmissions.firstWhere(
+        (sub) => sub.date == todayDateStr,
+        orElse: () => PiketSubmission(id: -1, date: '', status: ''),
+      );
+
+      if (todaySub.id != -1) {
+        _isAlreadySubmittedToday = true;
+        _submittedByName = todaySub.submittedBy;
+      } else {
+        _isAlreadySubmittedToday = false;
+        _submittedByName = null;
+      }
 
     } catch (e) {
       _errorMessage = 'Gagal memuat status & konfigurasi: ${e.toString().replaceAll('Exception: ', '')}';
@@ -313,5 +341,20 @@ class SmartCheckViewModel extends ChangeNotifier {
     _findings = [];
     _errorMessage = null;
     notifyListeners();
+  }
+
+  bool _isDisposed = false;
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
+  }
+
+  @override
+  void notifyListeners() {
+    if (!_isDisposed) {
+      super.notifyListeners();
+    }
   }
 }
