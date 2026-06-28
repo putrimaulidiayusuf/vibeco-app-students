@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/service_locator.dart';
+import '../../core/models/piket_team_model.dart';
 
 class CameraUploadViewModel extends ChangeNotifier {
   final ApiService _apiService = ApiService();
@@ -27,7 +28,56 @@ class CameraUploadViewModel extends ChangeNotifier {
   List<String> _findings = [];
   List<String> get findings => _findings;
 
+  bool _showCamera = false;
+  bool get showCamera => _showCamera;
+
+  List<StudentAttendance> _attendanceList = [];
+  List<StudentAttendance> get attendanceList => _attendanceList;
+
   bool get isReadyToSubmit => _frontPhoto != null && _backPhoto != null && _extraPhoto != null;
+
+  void initAttendance(List<PiketTeamMember> members) {
+    if (_attendanceList.isNotEmpty) return;
+    _attendanceList = members.map((m) => StudentAttendance(
+      studentId: m.id,
+      name: m.name,
+      status: 'piket',
+    )).toList();
+    notifyListeners();
+  }
+
+  void updateStudentStatus(int studentId, String status) {
+    final index = _attendanceList.indexWhere((s) => s.studentId == studentId);
+    if (index != -1) {
+      final old = _attendanceList[index];
+      _attendanceList[index] = StudentAttendance(
+        studentId: old.studentId,
+        name: old.name,
+        status: status,
+        reason: status == 'piket' ? null : old.reason,
+      );
+      notifyListeners();
+    }
+  }
+
+  void updateStudentReason(int studentId, String reason) {
+    final index = _attendanceList.indexWhere((s) => s.studentId == studentId);
+    if (index != -1) {
+      final old = _attendanceList[index];
+      _attendanceList[index] = StudentAttendance(
+        studentId: old.studentId,
+        name: old.name,
+        status: old.status,
+        reason: reason,
+      );
+      notifyListeners();
+    }
+  }
+
+  void proceedToCamera() {
+    _showCamera = true;
+    notifyListeners();
+  }
 
   Future<String?> pickPhoto(String slot, ImageSource source) async {
     try {
@@ -92,6 +142,7 @@ class CameraUploadViewModel extends ChangeNotifier {
         imagePaths,
         position.latitude,
         position.longitude,
+        attendance: _attendanceList,
       );
 
       _aiScore = result['ai_score'];
@@ -123,6 +174,23 @@ class CameraUploadViewModel extends ChangeNotifier {
     _aiScore = null;
     _findings = [];
     _errorMessage = null;
+    _showCamera = false;
+    _attendanceList = [];
     notifyListeners();
+  }
+
+  bool _isDisposed = false;
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
+  }
+
+  @override
+  void notifyListeners() {
+    if (!_isDisposed) {
+      super.notifyListeners();
+    }
   }
 }

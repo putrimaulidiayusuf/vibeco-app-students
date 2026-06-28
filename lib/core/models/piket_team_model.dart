@@ -11,7 +11,9 @@ class PiketTeamMember {
 
   factory PiketTeamMember.fromJson(Map<String, dynamic> json) {
     return PiketTeamMember(
-      id: json['id'] is int ? json['id'] : int.parse(json['id'].toString()),
+      id: json['id'] != null
+          ? (json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0)
+          : 0,
       name: json['name']?.toString() ?? '',
       nis: json['nis']?.toString(),
     );
@@ -58,9 +60,11 @@ class PiketTeam {
     }
 
     return PiketTeam(
-      id: json['id'] is int ? json['id'] : int.parse(json['id'].toString()),
-      name: json['name']?.toString() ?? '',
-      day: json['day']?.toString(),
+      id: json['id'] != null
+          ? (json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0)
+          : 0,
+      name: json['name']?.toString() ?? 'Regu Piket',
+      day: json['day']?.toString() ?? json['day_of_week']?.toString(),
       classId: json['class_id'] != null
           ? (json['class_id'] is int
               ? json['class_id']
@@ -81,6 +85,28 @@ class PiketTeam {
       'class_name': className,
       'members': members.map((m) => m.toJson()).toList(),
       'created_at': createdAt,
+    };
+  }
+}
+
+class StudentAttendance {
+  final int studentId;
+  final String name;
+  String status; // 'piket', 'kabur', 'tidak sekolah'
+  String? reason;
+
+  StudentAttendance({
+    required this.studentId,
+    required this.name,
+    this.status = 'piket',
+    this.reason,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'student_id': studentId,
+      'status': status,
+      'reason': reason,
     };
   }
 }
