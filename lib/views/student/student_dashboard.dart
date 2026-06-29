@@ -542,14 +542,28 @@ class _StudentDashboardState extends State<StudentDashboard>
             ),
           ),
           GestureDetector(
-            onTap: () {},
+            onTap: () {
+              if (!_isLoadingLocation) {
+                setState(() {
+                  _isLoadingLocation = true;
+                  _distance = null;
+                });
+                _checkLocation();
+              }
+            },
             child: Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
                 color: statusColor.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.close, color: statusColor, size: 18),
+              child: Icon(
+                _isLoadingLocation 
+                    ? Icons.sync 
+                    : (isInsideSchool ? Icons.check : Icons.refresh),
+                color: statusColor,
+                size: 18,
+              ),
             ),
           ),
         ],
