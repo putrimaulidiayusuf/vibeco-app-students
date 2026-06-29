@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/config/app_config.dart';
@@ -15,6 +16,80 @@ class SmartCheckScreen extends StatefulWidget {
 }
 
 class _SmartCheckScreenState extends State<SmartCheckScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAndRequestPermissions();
+    });
+  }
+
+  Future<void> _checkAndRequestPermissions() async {
+    final locationStatus = await Permission.locationWhenInUse.status;
+    final cameraStatus = await Permission.camera.status;
+
+    if (locationStatus.isDenied || cameraStatus.isDenied) {
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: const Row(
+              children: [
+                Icon(Icons.security, color: AppTheme.primary),
+                SizedBox(width: 8),
+                Text('Izin Akses Aplikasi'),
+              ],
+            ),
+            content: const Text(
+              'Aplikasi ZieClean memerlukan izin Lokasi (untuk memverifikasi kehadiran di geofence sekolah) dan Kamera (bila Anda mengunggah bukti foto piket).',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: const Text('Batal', style: TextStyle(color: Colors.grey)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onPressed: () async {
+                  Navigator.pop(context);
+                  
+                  // Request permissions
+                  await [
+                    Permission.locationWhenInUse,
+                    Permission.camera,
+                  ].request();
+                  
+                  // Reload state once permission changes
+                  if (mounted) {
+                    final auth = Provider.of<AuthService>(context, listen: false);
+                    final token = auth.token;
+                    if (token != null) {
+                      final vm = Provider.of<SmartCheckViewModel>(context, listen: false);
+                      vm.loadStatusAndConfig(token);
+                    }
+                  }
+                },
+                child: const Text('Izinkan'),
+              ),
+            ],
+          ),
+        );
+      }
+    }
+  }
+
   String translateDay(String englishDay) {
     switch (englishDay.toLowerCase()) {
       case 'monday':
