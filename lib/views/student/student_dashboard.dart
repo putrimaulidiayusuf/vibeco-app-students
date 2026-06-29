@@ -102,7 +102,7 @@ class _StudentDashboardState extends State<StudentDashboard>
         builder: (context, statusVm, child) {
           return Scaffold(
             backgroundColor: const Color(0xFFF8FAF8),
-            appBar: (_currentIndex == 0 || _currentIndex == 4)
+            appBar: (_currentIndex == 0 || _currentIndex == 2 || _currentIndex == 4)
                 ? null
                 : AppBar(
                     title: Column(

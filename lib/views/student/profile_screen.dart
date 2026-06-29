@@ -151,104 +151,167 @@ class ProfileScreen extends StatelessWidget {
                             label: 'Email',
                             value: user.email!,
                           ),
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 16),
 
-                        // ─── LOGOUT BUTTON ───
-                        SizedBox(
+                        Container(
                           width: double.infinity,
-                          child: GestureDetector(
-                            onTap: () async {
-                              final confirm = await showDialog<bool>(
-                                context: context,
-                                builder: (context) => AlertDialog(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  title: const Text(
-                                    'Keluar Aplikasi',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.emeraldDark,
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.error.withValues(alpha: 0.15),
+                                blurRadius: 16,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              splashColor: AppColors.error.withValues(alpha: 0.2),
+                              highlightColor: AppColors.error.withValues(alpha: 0.1),
+                              onTap: () async {
+                                final confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder: (context) => Dialog(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(24),
                                     ),
-                                  ),
-                                  content: const Text(
-                                    'Apakah Anda yakin ingin keluar dari ZieClean?',
-                                    style: TextStyle(color: Colors.black54),
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(context, false),
-                                      child: const Text(
-                                        'Batal',
-                                        style: TextStyle(color: AppColors.emeraldDark),
+                                    elevation: 0,
+                                    backgroundColor: Colors.transparent,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(24),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        shape: BoxShape.rectangle,
+                                        borderRadius: BorderRadius.circular(24),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: AppColors.emeraldDark.withValues(alpha: 0.1),
+                                            blurRadius: 24.0,
+                                            offset: const Offset(0.0, 12.0),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(16),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.error.withValues(alpha: 0.1),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: const Icon(
+                                              Icons.logout_rounded,
+                                              size: 36,
+                                              color: AppColors.error,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 20),
+                                          const Text(
+                                            'Keluar Akun?',
+                                            style: TextStyle(
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.emeraldDark,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 12),
+                                          const Text(
+                                            'Apakah Anda yakin ingin keluar dari aplikasi? Anda harus login kembali untuk masuk.',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.black54,
+                                              height: 1.5,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 32),
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: TextButton(
+                                                  onPressed: () => Navigator.pop(context, false),
+                                                  style: TextButton.styleFrom(
+                                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius: BorderRadius.circular(12),
+                                                    ),
+                                                  ),
+                                                  child: const Text(
+                                                    'Batal',
+                                                    style: TextStyle(
+                                                      color: Colors.grey,
+                                                      fontSize: 15,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Expanded(
+                                                child: ElevatedButton(
+                                                  onPressed: () => Navigator.pop(context, true),
+                                                  style: ElevatedButton.styleFrom(
+                                                    backgroundColor: AppColors.error,
+                                                    foregroundColor: Colors.white,
+                                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                                    elevation: 0,
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius: BorderRadius.circular(12),
+                                                    ),
+                                                  ),
+                                                  child: const Text(
+                                                    'Ya, Keluar',
+                                                    style: TextStyle(
+                                                      fontSize: 15,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                    ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: AppColors.error,
-                                        foregroundColor: Colors.white,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
+                                  ),
+                                );
+
+                                if (confirm == true && context.mounted) {
+                                  await auth.clearSession();
+                                }
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.logout_rounded,
+                                      color: AppColors.error,
+                                      size: 24,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    const Text(
+                                      'Keluar Akun',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.error,
                                       ),
-                                      onPressed: () => Navigator.pop(context, true),
-                                      child: const Text('Keluar'),
                                     ),
                                   ],
                                 ),
-                              );
-
-                              if (confirm == true && context.mounted) {
-                                await auth.clearSession();
-                              }
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(16),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.error.withValues(alpha: 0.15),
-                                    blurRadius: 20,
-                                    offset: const Offset(0, 8),
-                                  ),
-                                ],
-                                border: Border.all(
-                                  color: AppColors.error.withValues(alpha: 0.2),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.error.withValues(alpha: 0.1),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(
-                                      Icons.logout_rounded,
-                                      color: AppColors.error,
-                                      size: 20,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  const Text(
-                                    'Keluar',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.error,
-                                    ),
-                                  ),
-                                ],
                               ),
                             ),
                           ),
                         ),
-                        const SizedBox(height: 120), // Bottom padding for notch navbar
+                        const SizedBox(height: 32),
                       ],
                     ),
                   ),
