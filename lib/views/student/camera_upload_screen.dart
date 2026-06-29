@@ -133,27 +133,16 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
                   borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
                   border: Border.all(color: Colors.grey.shade200, style: BorderStyle.values[0]),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    ElevatedButton.icon(
-                      onPressed: () => _pickImage(vm, slotKey, ImageSource.camera),
-                      icon: const Icon(Icons.camera_alt_rounded, size: 18),
-                      label: const Text('Kamera'),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        backgroundColor: AppTheme.primaryGreen,
-                      ),
+                 child: Center(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _pickImage(vm, slotKey, ImageSource.camera),
+                    icon: const Icon(Icons.camera_alt_rounded, size: 20),
+                    label: const Text('Ambil Foto Kamera (Real-time)'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      backgroundColor: AppTheme.primaryGreen,
                     ),
-                    OutlinedButton.icon(
-                      onPressed: () => _pickImage(vm, slotKey, ImageSource.gallery),
-                      icon: const Icon(Icons.photo_library_rounded, size: 18),
-                      label: const Text('Galeri'),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
           ],
