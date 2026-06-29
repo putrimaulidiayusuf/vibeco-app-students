@@ -20,7 +20,12 @@ class GeolocatorLocationService implements LocationService {
       
       if (permission == LocationPermission.deniedForever) return null;
 
-      return await Geolocator.getCurrentPosition();
+      return await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.medium,
+        timeLimit: const Duration(seconds: 7),
+      ).catchError((_) async {
+        return await Geolocator.getLastKnownPosition();
+      });
     } catch (_) {
       return null;
     }
