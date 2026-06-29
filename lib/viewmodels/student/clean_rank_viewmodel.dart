@@ -14,11 +14,29 @@ class CleanRankViewModel extends ChangeNotifier {
   List<ClassRanking> _monthlyRankings = [];
   List<ClassRanking> get monthlyRankings => _monthlyRankings;
 
+  List<PiketDayRanking> _classRankings = [];
+  List<PiketDayRanking> get classRankings => _classRankings;
+
   bool _isLoading = true;
   bool get isLoading => _isLoading;
 
   String? _error;
   String? get error => _error;
+
+  Future<void> fetchClassRankings(String token, {int? schoolClassId}) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      _classRankings = await _apiService.getCleanestDay(token, schoolClassId: schoolClassId);
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 
   Future<void> fetchRankings(String token, String interval) async {
     _isLoading = true;

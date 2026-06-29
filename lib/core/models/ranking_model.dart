@@ -51,3 +51,33 @@ class ClassRanking {
     };
   }
 }
+
+class PiketDayRanking {
+  final int rank;
+  final String dayOfWeek;
+  final String dayNameId;
+  final double averageScore;
+  final int piketCount;
+
+  PiketDayRanking({
+    required this.rank,
+    required this.dayOfWeek,
+    required this.dayNameId,
+    required this.averageScore,
+    required this.piketCount,
+  });
+
+  factory PiketDayRanking.fromJson(Map<String, dynamic> json, int rank) {
+    return PiketDayRanking(
+      rank: rank,
+      dayOfWeek: json['day_of_week']?.toString() ?? '',
+      dayNameId: json['day_name_id']?.toString() ?? '',
+      averageScore: json['average_score'] != null
+          ? (json['average_score'] as num).toDouble()
+          : 0.0,
+      piketCount: json['piket_count'] != null
+          ? (json['piket_count'] as num).toInt()
+          : 0,
+    );
+  }
+}

@@ -197,6 +197,31 @@ class ApiService {
     }
   }
 
+  /// Get cleanest day breakdown (classroom piket days ranking).
+  Future<List<PiketDayRanking>> getCleanestDay(String token, {int? schoolClassId}) async {
+    final queryParam = schoolClassId != null ? '?school_class_id=$schoolClassId' : '';
+    final url = AppConfig.buildUrl('/rankings/cleanest-day$queryParam');
+    final response = await locator.httpService.get(
+      url,
+      headers: _getHeaders(token),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final List<dynamic> list = data['breakdown'] as List<dynamic>;
+      return list
+          .asMap()
+          .map((index, item) => MapEntry(
+                index,
+                PiketDayRanking.fromJson(item as Map<String, dynamic>, index + 1),
+              ))
+          .values
+          .toList();
+    } else {
+      throw Exception('Gagal mengambil peringkat kelas.');
+    }
+  }
+
   /// Get classroom piket schedules.
   Future<List<PiketTeam>> getSchedules(String token) async {
     final url = AppConfig.buildUrl('/schedule');
