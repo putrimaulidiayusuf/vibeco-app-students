@@ -258,7 +258,7 @@ class ApiService {
 
   /// Get today's scheduled picket verification details (student).
   Future<PiketTeam> verifyPiketToday(String token) async {
-    final url = AppConfig.buildUrl('/piket/verify');
+    final url = AppConfig.buildUrl('/piket/today-duty');
     final response = await locator.httpService.get(
       url,
       headers: _getHeaders(token),
