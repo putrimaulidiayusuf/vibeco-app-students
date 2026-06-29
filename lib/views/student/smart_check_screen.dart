@@ -39,7 +39,7 @@ class _SmartCheckScreenState extends State<SmartCheckScreen> {
             ),
             title: const Row(
               children: [
-                Icon(Icons.security, color: AppTheme.primary),
+                Icon(Icons.security, color: AppTheme.primaryGreen),
                 SizedBox(width: 8),
                 Text('Izin Akses Aplikasi'),
               ],
@@ -56,7 +56,7 @@ class _SmartCheckScreenState extends State<SmartCheckScreen> {
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primary,
+                  backgroundColor: AppTheme.primaryGreen,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
