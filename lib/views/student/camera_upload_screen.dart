@@ -377,7 +377,11 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
             );
           } else if (!uploadVm.showCamera) {
             if (statusVm.myPiketTeam != null) {
-              uploadVm.initAttendance(statusVm.myPiketTeam!.members);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  uploadVm.initAttendance(statusVm.myPiketTeam!.members);
+                }
+              });
             }
             bodyWidget = RefreshIndicator(
               onRefresh: () => statusVm.loadStatusAndConfig(token),
