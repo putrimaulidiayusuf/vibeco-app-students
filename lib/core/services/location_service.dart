@@ -20,13 +20,15 @@ class GeolocatorLocationService implements LocationService {
       
       if (permission == LocationPermission.deniedForever) return null;
 
-      return await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.medium,
-        forceAndroidLocationManager: true,
-        timeLimit: const Duration(seconds: 5),
-      ).catchError((_) async {
+      try {
+        return await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.medium,
+          forceAndroidLocationManager: true,
+          timeLimit: const Duration(seconds: 5),
+        );
+      } catch (_) {
         return await Geolocator.getLastKnownPosition();
-      });
+      }
     } catch (_) {
       return null;
     }
