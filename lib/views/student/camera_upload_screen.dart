@@ -16,15 +16,14 @@ class CameraUploadScreen extends StatefulWidget {
 }
 
 class _CameraUploadScreenState extends State<CameraUploadScreen> {
-  SmartCheckViewModel? _statusViewModel;
-
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = Provider.of<AuthService>(context, listen: false);
       if (auth.token != null) {
-        _statusViewModel?.loadStatusAndConfig(auth.token!);
+        Provider.of<SmartCheckViewModel>(context, listen: false)
+            .loadStatusAndConfig(auth.token!);
       }
     });
   }
@@ -51,8 +50,7 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
             backgroundColor: AppTheme.success,
           ),
         );
-        // Refresh the status and history views
-        _statusViewModel?.loadStatusAndConfig(token);
+        Provider.of<SmartCheckViewModel>(context, listen: false).loadStatusAndConfig(token);
       } else if (vm.errorMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -164,14 +162,6 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
       providers: [
         ChangeNotifierProvider<CameraUploadViewModel>(
           create: (_) => CameraUploadViewModel(),
-        ),
-        ChangeNotifierProvider<SmartCheckViewModel>(
-          create: (_) {
-            final vm = SmartCheckViewModel();
-            _statusViewModel = vm;
-            vm.loadStatusAndConfig(token);
-            return vm;
-          },
         ),
       ],
       child: Consumer2<CameraUploadViewModel, SmartCheckViewModel>(

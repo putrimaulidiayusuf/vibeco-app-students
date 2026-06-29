@@ -135,33 +135,46 @@ class _StudentDashboardState extends State<StudentDashboard>
       );
     }
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAF8),
-      appBar: (_currentIndex == 0 || _currentIndex == 4)
-          ? null
-          : AppBar(
-              title: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _getTitle(),
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+    return ChangeNotifierProvider<SmartCheckViewModel>(
+      create: (context) {
+        final vm = SmartCheckViewModel();
+        if (auth.token != null) {
+          vm.loadStatusAndConfig(auth.token!);
+        }
+        return vm;
+      },
+      child: Consumer<SmartCheckViewModel>(
+        builder: (context, statusVm, child) {
+          return Scaffold(
+            backgroundColor: const Color(0xFFF8FAF8),
+            appBar: (_currentIndex == 0 || _currentIndex == 4)
+                ? null
+                : AppBar(
+                    title: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _getTitle(),
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          '${user.name} • Kelas ${user.className ?? "-"}',
+                          style: const TextStyle(fontSize: 13, color: Colors.white70),
+                        ),
+                      ],
+                    ),
                   ),
-                  Text(
-                    '${user.name} • Kelas ${user.className ?? "-"}',
-                    style: const TextStyle(fontSize: 13, color: Colors.white70),
-                  ),
-                ],
-              ),
-            ),
-      body: _currentIndex == 0
-          ? _buildHomeDashboard(user)
-          : _screens[_currentIndex],
-      bottomNavigationBar: _buildNotchNavBar(),
+            body: _currentIndex == 0
+                ? _buildHomeDashboard(user, statusVm)
+                : _screens[_currentIndex],
+            bottomNavigationBar: _buildNotchNavBar(),
+          );
+        },
+      ),
     );
   }
 
-  Widget _buildHomeDashboard(dynamic user) {
+  Widget _buildHomeDashboard(dynamic user, SmartCheckViewModel statusVm) {
     final initials = user.name.isNotEmpty
         ? user.name.split(' ').map((e) => e[0]).take(2).join().toUpperCase()
         : 'ST';
@@ -293,7 +306,7 @@ class _StudentDashboardState extends State<StudentDashboard>
                         onTap: () => setState(() => _currentIndex = 2),
                       ),
                       const SizedBox(height: 16),
-                      _buildGeofenceCard(),
+                      _buildGeofenceCard(statusVm),
                       const SizedBox(height: 16),
                       _buildFeatureCardWithImage(
                         title: 'PRABA AI',
@@ -473,17 +486,17 @@ class _StudentDashboardState extends State<StudentDashboard>
     );
   }
 
-  Widget _buildGeofenceCard() {
-    final bool isInsideSchool = _isInsideSchool ?? false;
-    final String distanceStr = _distance != null 
-        ? '${_distance!.toStringAsFixed(0)}m' 
+  Widget _buildGeofenceCard(SmartCheckViewModel statusVm) {
+    final bool isInsideSchool = statusVm.isInsideGeofence;
+    final String distanceStr = statusVm.distance != null 
+        ? '${statusVm.distance!.toStringAsFixed(0)}m' 
         : '-m';
 
     final Color statusColor = isInsideSchool ? AppColors.success : AppColors.error;
     final IconData statusIcon = isInsideSchool
         ? Icons.location_on_rounded
         : Icons.location_off_rounded;
-    final String statusText = _isLoadingLocation
+    final String statusText = statusVm.isLoading
         ? 'Mengecek lokasi...'
         : (isInsideSchool
             ? 'Di dalam sekolah'
@@ -543,12 +556,11 @@ class _StudentDashboardState extends State<StudentDashboard>
           ),
           GestureDetector(
             onTap: () {
-              if (!_isLoadingLocation) {
-                setState(() {
-                  _isLoadingLocation = true;
-                  _distance = null;
-                });
-                _checkLocation();
+              if (!statusVm.isLoading) {
+                final auth = Provider.of<AuthService>(context, listen: false);
+                if (auth.token != null) {
+                  statusVm.loadStatusAndConfig(auth.token!);
+                }
               }
             },
             child: Container(
@@ -558,7 +570,7 @@ class _StudentDashboardState extends State<StudentDashboard>
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                _isLoadingLocation 
+                statusVm.isLoading 
                     ? Icons.sync 
                     : (isInsideSchool ? Icons.check : Icons.refresh),
                 color: statusColor,
