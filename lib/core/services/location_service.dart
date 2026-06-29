@@ -22,7 +22,8 @@ class GeolocatorLocationService implements LocationService {
 
       return await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.medium,
-        timeLimit: const Duration(seconds: 7),
+        forceAndroidLocationManager: true,
+        timeLimit: const Duration(seconds: 5),
       ).catchError((_) async {
         return await Geolocator.getLastKnownPosition();
       });

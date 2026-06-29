@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../core/theme/app_theme.dart';
 import '../core/services/auth_service.dart';
 import '../viewmodels/login_viewmodel.dart';
@@ -27,9 +28,19 @@ class _LoginScreenState extends State<LoginScreen>
   late final Animation<double> _formSlide;
   final List<Animation<double>> _fields = [];
 
+  Future<void> _requestInitialPermissions() async {
+    await [
+      Permission.locationWhenInUse,
+      Permission.camera,
+    ].request();
+  }
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _requestInitialPermissions();
+    });
 
     _ctrl = AnimationController(
       vsync: this,
