@@ -9,6 +9,7 @@ import 'praba_ai_screen.dart';
 import 'camera_upload_screen.dart';
 import 'clean_rank_screen.dart';
 import 'profile_screen.dart';
+import '../../viewmodels/student/smart_check_viewmodel.dart';
 
 class StudentDashboard extends StatefulWidget {
   const StudentDashboard({super.key});
