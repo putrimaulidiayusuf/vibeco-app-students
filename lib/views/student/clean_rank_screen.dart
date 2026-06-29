@@ -222,7 +222,7 @@ class _CleanRankScreenState extends State<CleanRankScreen> with TickerProviderSt
     final listItems = rankings.length > 3 ? rankings.sublist(3) : <ClassRanking>[];
 
     return RefreshIndicator(
-      onRefresh: _fetchRankingsForTab,
+      onRefresh: _fetchRankings,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16.0),
@@ -324,14 +324,14 @@ class _CleanRankScreenState extends State<CleanRankScreen> with TickerProviderSt
           width: 85,
           height: height,
           decoration: BoxDecoration(
-            color: color.withOpacity(0.9),
+            color: color.withValues(alpha: 0.9),
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(AppTheme.radiusMedium),
               topRight: Radius.circular(AppTheme.radiusMedium),
             ),
             boxShadow: [
               BoxShadow(
-                color: color.withOpacity(0.3),
+                color: color.withValues(alpha: 0.3),
                 blurRadius: 6,
                 offset: const Offset(0, 3),
               )
