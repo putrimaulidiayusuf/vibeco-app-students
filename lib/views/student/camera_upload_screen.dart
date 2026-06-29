@@ -184,7 +184,6 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
 
           String headerTitle = 'Unggah Foto Piket Kelas';
           String headerSubtitle = 'Wajib mengunggah semua 3 foto dengan sudut pandang berbeda untuk dianalisis oleh AI.';
-          bool showBackButton = true;
           VoidCallback? onBack = widget.onViewHistory;
 
           if (uploadVm.aiScore != null) {
@@ -197,7 +196,6 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
             headerTitle = 'Daftar Kehadiran Regu Piket';
             headerSubtitle = 'Isi status kehadiran setiap anggota regu piket hari ini sebelum mengambil foto.';
           } else {
-            // Already handled by default showBackButton = true and onBack = widget.onViewHistory
             // However, when on camera page, we probably want back button to return to attendance page.
             // But following the user code exactly:
           }
@@ -542,13 +540,10 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
                       children: [
                         Row(
                           children: [
-                            if (showBackButton)
-                              IconButton(
-                                icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
-                                onPressed: onBack,
-                              )
-                            else
-                              const SizedBox(width: 48, height: 48), // spacer
+                            IconButton(
+                              icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+                              onPressed: onBack,
+                            ),
                             Expanded(
                               child: Text(
                                 headerTitle,
@@ -567,7 +562,7 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
                         Text(
                           headerSubtitle,
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.9),
+                            color: Colors.white.withValues(alpha: 0.9),
                             fontSize: 13,
                           ),
                           textAlign: TextAlign.center,
@@ -655,7 +650,7 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
         boxShadow: isEnabled
             ? [
                 BoxShadow(
-                  color: AppColors.emeraldDark.withOpacity(0.3),
+                  color: AppColors.emeraldDark.withValues(alpha: 0.3),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 )
