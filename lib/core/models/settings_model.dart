@@ -26,8 +26,8 @@ class AppSettings {
       radius: json['radius'] != null
           ? (json['radius'] as num).toDouble()
           : 100.0,
-      startTime: json['start_time']?.toString() ?? '06:00',
-      endTime: json['end_time']?.toString() ?? '08:00',
+      startTime: json['start_time']?.toString() ?? json['upload_start_time']?.toString() ?? '08:00',
+      endTime: json['end_time']?.toString() ?? json['upload_end_time']?.toString() ?? '17:00',
       schoolName: json['school_name']?.toString(),
     );
   }

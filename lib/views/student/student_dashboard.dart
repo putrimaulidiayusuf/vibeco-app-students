@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/services/auth_service.dart';
-import '../../core/services/api_service.dart';
-import '../../core/services/service_locator.dart';
 import 'smart_check_screen.dart';
 import 'praba_ai_screen.dart';
 import 'camera_upload_screen.dart';
@@ -27,15 +25,9 @@ class _StudentDashboardState extends State<StudentDashboard>
   late Animation<double> _cameraFloat;
 
   late final List<Widget> _screens;
-  
-  bool? _isInsideSchool;
-  double? _distance;
-  bool _isLoadingLocation = true;
-
   @override
   void initState() {
     super.initState();
-    _checkLocation();
     _screens = [
       const SmartCheckScreen(),
       const PrabaAiScreen(),
@@ -68,44 +60,6 @@ class _StudentDashboardState extends State<StudentDashboard>
   void dispose() {
     _animController.dispose();
     super.dispose();
-  }
-
-  Future<void> _checkLocation() async {
-    try {
-      final auth = Provider.of<AuthService>(context, listen: false);
-      if (auth.token == null) return;
-      
-      final settings = await ApiService().getSettings(auth.token!);
-      final position = await locator.locationService.getCurrentPosition();
-      
-      if (position != null) {
-        final dist = locator.locationService.distanceBetween(
-          position.latitude,
-          position.longitude,
-          settings.latitude,
-          settings.longitude,
-        );
-        if (mounted) {
-          setState(() {
-            _distance = dist;
-            _isInsideSchool = dist <= settings.radius;
-            _isLoadingLocation = false;
-          });
-        }
-      } else {
-        if (mounted) {
-          setState(() {
-            _isLoadingLocation = false;
-          });
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoadingLocation = false;
-        });
-      }
-    }
   }
 
   String _getTitle() {
@@ -209,7 +163,7 @@ class _StudentDashboardState extends State<StudentDashboard>
                         border: Border.all(color: Colors.white, width: 3),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.15),
+                            color: Colors.black.withValues(alpha: 0.15),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                             spreadRadius: 1,
@@ -245,7 +199,7 @@ class _StudentDashboardState extends State<StudentDashboard>
                         Text(
                           'Jaga selalu kebersihan kelasmu yaa',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.8),
+                            color: Colors.white.withValues(alpha: 0.8),
                             fontSize: 14,
                           ),
                         ),
@@ -344,7 +298,7 @@ class _StudentDashboardState extends State<StudentDashboard>
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: AppColors.emeraldDark.withOpacity(0.2),
+              color: AppColors.emeraldDark.withValues(alpha: 0.2),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),
@@ -372,7 +326,7 @@ class _StudentDashboardState extends State<StudentDashboard>
             Text(
               title,
               style: TextStyle(
-                color: Colors.white.withOpacity(0.8),
+                color: Colors.white.withValues(alpha: 0.8),
                 fontSize: 11,
               ),
               textAlign: TextAlign.center,
@@ -399,13 +353,13 @@ class _StudentDashboardState extends State<StudentDashboard>
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppColors.emeraldDark.withOpacity(0.08),
+            color: AppColors.emeraldDark.withValues(alpha: 0.08),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
         ],
         border: Border.all(
-          color: AppColors.primaryGreen.withOpacity(0.1),
+          color: AppColors.primaryGreen.withValues(alpha: 0.1),
           width: 1,
         ),
       ),
@@ -510,13 +464,13 @@ class _StudentDashboardState extends State<StudentDashboard>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: statusColor.withOpacity(0.08),
+            color: statusColor.withValues(alpha: 0.08),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
         border: Border.all(
-          color: statusColor.withOpacity(0.2),
+          color: statusColor.withValues(alpha: 0.2),
           width: 1.5,
         ),
       ),
@@ -525,7 +479,7 @@ class _StudentDashboardState extends State<StudentDashboard>
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.1),
+              color: statusColor.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(statusIcon, color: statusColor, size: 24),
@@ -567,7 +521,7 @@ class _StudentDashboardState extends State<StudentDashboard>
             child: Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: statusColor.withOpacity(0.1),
+                color: statusColor.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -599,7 +553,7 @@ class _StudentDashboardState extends State<StudentDashboard>
             size: Size(screenWidth, 80),
             painter: _NotchNavbarPainter(
               bgColor: Colors.white,
-              shadowColor: AppColors.emeraldDark.withOpacity(0.06),
+              shadowColor: AppColors.emeraldDark.withValues(alpha: 0.06),
             ),
           ),
 
@@ -670,13 +624,13 @@ class _StudentDashboardState extends State<StudentDashboard>
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.primaryGreen.withOpacity(0.3),
+                                color: AppColors.primaryGreen.withValues(alpha: 0.3),
                                 blurRadius: 10,
                                 offset: const Offset(0, 5),
                                 spreadRadius: 1,
                               ),
                               BoxShadow(
-                                color: AppColors.primaryLight.withOpacity(0.2),
+                                color: AppColors.primaryLight.withValues(alpha: 0.2),
                                 blurRadius: 20,
                                 offset: const Offset(0, 0),
                                 spreadRadius: 4,
@@ -715,7 +669,7 @@ class _StudentDashboardState extends State<StudentDashboard>
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: isActive
-              ? AppColors.primaryGreen.withOpacity(0.1)
+              ? AppColors.primaryGreen.withValues(alpha: 0.1)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),

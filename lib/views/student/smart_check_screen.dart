@@ -33,7 +33,7 @@ class _SmartCheckScreenState extends State<SmartCheckScreen> {
         showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (context) => AlertDialog(
+          builder: (dialogContext) => AlertDialog(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
@@ -50,7 +50,7 @@ class _SmartCheckScreenState extends State<SmartCheckScreen> {
             actions: [
               TextButton(
                 onPressed: () {
-                  Navigator.pop(context);
+                  Navigator.pop(dialogContext);
                 },
                 child: const Text('Batal', style: TextStyle(color: Colors.grey)),
               ),
@@ -63,7 +63,7 @@ class _SmartCheckScreenState extends State<SmartCheckScreen> {
                   ),
                 ),
                 onPressed: () async {
-                  Navigator.pop(context);
+                  Navigator.pop(dialogContext);
                   
                   // Request permissions
                   await [
@@ -71,14 +71,12 @@ class _SmartCheckScreenState extends State<SmartCheckScreen> {
                     Permission.camera,
                   ].request();
                   
-                  // Reload state once permission changes
-                  if (mounted) {
-                    final auth = Provider.of<AuthService>(context, listen: false);
-                    final token = auth.token;
-                    if (token != null) {
-                      final vm = Provider.of<SmartCheckViewModel>(context, listen: false);
-                      vm.loadStatusAndConfig(token);
-                    }
+                  if (!mounted) return;
+                  final auth = Provider.of<AuthService>(context, listen: false);
+                  final token = auth.token;
+                  if (token != null && mounted) {
+                    final vm = Provider.of<SmartCheckViewModel>(context, listen: false);
+                    vm.loadStatusAndConfig(token);
                   }
                 },
                 child: const Text('Izinkan'),

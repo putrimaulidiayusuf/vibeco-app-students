@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import '../config/app_config.dart';
 import '../models/user_model.dart';
 import '../models/submission_model.dart';
@@ -97,13 +98,23 @@ class ApiService {
     final url = Uri.parse(AppConfig.buildUrl('/piket/submissions'));
     final request = http.MultipartRequest('POST', url);
 
+    final now = DateTime.now();
+    final timeStr = DateFormat('HH:mm').format(now);
+    final isoStr = now.toIso8601String();
+
     request.headers.addAll({
       'Accept': 'application/json',
       'Authorization': 'Bearer $token',
+      'X-Timezone': 'Asia/Jakarta',
+      'X-Client-Time': isoStr,
     });
 
     request.fields['latitude'] = latitude.toString();
     request.fields['longitude'] = longitude.toString();
+    request.fields['submitted_at'] = isoStr;
+    request.fields['client_time'] = timeStr;
+    request.fields['time'] = timeStr;
+    request.fields['timezone'] = 'Asia/Jakarta';
 
     if (attendance != null && attendance.isNotEmpty) {
       // 1. JSON String format
@@ -329,11 +340,11 @@ class ApiService {
       // Map the key/value list from Laravel index endpoint
       // Laravel returns pluck('value', 'key'), which is {"school_latitude": "-6.200000", ...}
       return AppSettings(
-        latitude: double.tryParse(data['school_latitude']?.toString() ?? '0') ?? 0.0,
-        longitude: double.tryParse(data['school_longitude']?.toString() ?? '0') ?? 0.0,
-        radius: double.tryParse(data['school_radius']?.toString() ?? '100') ?? 100.0,
-        startTime: data['upload_start_time']?.toString() ?? '06:00',
-        endTime: data['upload_end_time']?.toString() ?? '08:00',
+        latitude: double.tryParse(data['school_latitude']?.toString() ?? data['latitude']?.toString() ?? '0') ?? 0.0,
+        longitude: double.tryParse(data['school_longitude']?.toString() ?? data['longitude']?.toString() ?? '0') ?? 0.0,
+        radius: double.tryParse(data['school_radius']?.toString() ?? data['radius']?.toString() ?? '100') ?? 100.0,
+        startTime: data['upload_start_time']?.toString() ?? data['start_time']?.toString() ?? data['piket_start_time']?.toString() ?? '08:00',
+        endTime: data['upload_end_time']?.toString() ?? data['end_time']?.toString() ?? data['piket_end_time']?.toString() ?? '17:00',
       );
     } else {
       throw Exception('Gagal mengambil konfigurasi aplikasi.');
