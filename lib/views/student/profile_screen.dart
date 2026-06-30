@@ -234,10 +234,11 @@ class ProfileScreen extends StatelessWidget {
                                           Row(
                                             children: [
                                               Expanded(
-                                                child: TextButton(
+                                                child: OutlinedButton(
                                                   onPressed: () => Navigator.pop(context, false),
-                                                  style: TextButton.styleFrom(
+                                                  style: OutlinedButton.styleFrom(
                                                     padding: const EdgeInsets.symmetric(vertical: 14),
+                                                    side: BorderSide(color: Colors.grey.shade300),
                                                     shape: RoundedRectangleBorder(
                                                       borderRadius: BorderRadius.circular(12),
                                                     ),

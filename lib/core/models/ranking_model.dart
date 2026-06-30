@@ -57,6 +57,7 @@ class PiketDayRanking {
   final String dayOfWeek;
   final String dayNameId;
   final double averageScore;
+  final double? maxScore;
   final int piketCount;
 
   PiketDayRanking({
@@ -64,6 +65,7 @@ class PiketDayRanking {
     required this.dayOfWeek,
     required this.dayNameId,
     required this.averageScore,
+    this.maxScore,
     required this.piketCount,
   });
 
@@ -75,6 +77,9 @@ class PiketDayRanking {
       averageScore: json['average_score'] != null
           ? (json['average_score'] as num).toDouble()
           : 0.0,
+      maxScore: json['max_score'] != null
+          ? (json['max_score'] as num).toDouble()
+          : null,
       piketCount: json['piket_count'] != null
           ? (json['piket_count'] as num).toInt()
           : 0,

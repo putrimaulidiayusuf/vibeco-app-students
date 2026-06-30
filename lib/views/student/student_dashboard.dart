@@ -6,8 +6,11 @@ import 'smart_check_screen.dart';
 import 'praba_ai_screen.dart';
 import 'camera_upload_screen.dart';
 import 'clean_rank_screen.dart';
+import 'clean_track_screen.dart';
+import 'piket_schedule_screen.dart';
 import 'profile_screen.dart';
 import '../../viewmodels/student/smart_check_viewmodel.dart';
+import '../../viewmodels/student/dashboard_viewmodel.dart';
 
 class StudentDashboard extends StatefulWidget {
   const StudentDashboard({super.key});
@@ -19,6 +22,16 @@ class StudentDashboard extends StatefulWidget {
 class _StudentDashboardState extends State<StudentDashboard>
     with TickerProviderStateMixin {
   int _currentIndex = 0;
+  bool _hideNavbar = false;
+
+  void _setPage(int index) {
+    setState(() {
+      _currentIndex = index;
+      if (index != 2) {
+        _hideNavbar = false;
+      }
+    });
+  }
 
   late AnimationController _animController;
   late Animation<double> _cameraScale;
@@ -33,7 +46,12 @@ class _StudentDashboardState extends State<StudentDashboard>
       const PrabaAiScreen(),
       CameraUploadScreen(
         onViewHistory: () {
-          setState(() => _currentIndex = 0);
+          _setPage(0);
+        },
+        onShowCameraChanged: (showCamera) {
+          setState(() {
+            _hideNavbar = showCamera;
+          });
         },
       ),
       const CleanRankScreen(),
@@ -90,19 +108,32 @@ class _StudentDashboardState extends State<StudentDashboard>
       );
     }
 
-    return ChangeNotifierProvider<SmartCheckViewModel>(
-      create: (context) {
-        final vm = SmartCheckViewModel();
-        if (auth.token != null) {
-          vm.loadStatusAndConfig(auth.token!);
-        }
-        return vm;
-      },
-      child: Consumer<SmartCheckViewModel>(
-        builder: (context, statusVm, child) {
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<SmartCheckViewModel>(
+          create: (context) {
+            final vm = SmartCheckViewModel();
+            if (auth.token != null) {
+              vm.loadStatusAndConfig(auth.token!);
+            }
+            return vm;
+          },
+        ),
+        ChangeNotifierProvider<DashboardViewModel>(
+          create: (context) {
+            final vm = DashboardViewModel();
+            if (auth.token != null) {
+              vm.loadScheduleData(auth.token!);
+            }
+            return vm;
+          },
+        ),
+      ],
+      child: Consumer2<SmartCheckViewModel, DashboardViewModel>(
+        builder: (context, statusVm, dashVm, child) {
           return Scaffold(
             backgroundColor: const Color(0xFFF8FAF8),
-            appBar: (_currentIndex == 0 || _currentIndex == 2 || _currentIndex == 4)
+            appBar: (_currentIndex == 0 || _currentIndex == 2 || _currentIndex == 3 || _currentIndex == 4)
                 ? null
                 : AppBar(
                     title: Column(
@@ -120,7 +151,7 @@ class _StudentDashboardState extends State<StudentDashboard>
                     ),
                   ),
             body: _currentIndex == 0
-                ? _buildHomeDashboard(user, statusVm)
+                ? _buildHomeDashboard(user, statusVm, dashVm)
                 : _screens[_currentIndex],
             bottomNavigationBar: _buildNotchNavBar(),
           );
@@ -129,10 +160,13 @@ class _StudentDashboardState extends State<StudentDashboard>
     );
   }
 
-  Widget _buildHomeDashboard(dynamic user, SmartCheckViewModel statusVm) {
+  Widget _buildHomeDashboard(dynamic user, SmartCheckViewModel statusVm, DashboardViewModel dashVm) {
     final initials = user.name.isNotEmpty
         ? user.name.split(' ').map((e) => e[0]).take(2).join().toUpperCase()
         : 'ST';
+
+    // Get today's day name for the Jadwal Piket card
+    final todayLabel = dashVm.todayIndonesian;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -153,7 +187,7 @@ class _StudentDashboardState extends State<StudentDashboard>
               child: Row(
                 children: [
                   GestureDetector(
-                    onTap: () => setState(() => _currentIndex = 4),
+                    onTap: () => _setPage(4),
                     child: Container(
                       width: 52,
                       height: 52,
@@ -225,7 +259,7 @@ class _StudentDashboardState extends State<StudentDashboard>
                         child: _buildQuickActionCard(
                           icon: Icons.bar_chart_rounded,
                           title: 'Peringkat',
-                          onTap: () => setState(() => _currentIndex = 3),
+                          onTap: () => _setPage(3),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -233,8 +267,18 @@ class _StudentDashboardState extends State<StudentDashboard>
                         child: _buildQuickActionCard(
                           icon: Icons.calendar_today_rounded,
                           title: 'Jadwal Piket',
-                          subtitle: 'Senin',
-                          onTap: () {},
+                          subtitle: todayLabel,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ChangeNotifierProvider<DashboardViewModel>.value(
+                                  value: dashVm,
+                                  child: const PiketScheduleScreen(),
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -243,7 +287,14 @@ class _StudentDashboardState extends State<StudentDashboard>
                           icon: Icons.history_rounded,
                           title: 'Riwayat',
                           subtitle: 'Laporan Piket',
-                          onTap: () {},
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const CleanTrackScreen(),
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ],
@@ -258,7 +309,7 @@ class _StudentDashboardState extends State<StudentDashboard>
                         subtitle: 'Setor pengerjaan piket anda dan dapatkan penilaian!',
                         buttonText: 'Klik disini',
                         imagePath: 'assets/images/dummy.png',
-                        onTap: () => setState(() => _currentIndex = 2),
+                        onTap: () => _setPage(2),
                       ),
                       const SizedBox(height: 16),
                       _buildGeofenceCard(statusVm),
@@ -268,7 +319,7 @@ class _StudentDashboardState extends State<StudentDashboard>
                         subtitle: 'Tanya seputar lingkungan pada PRABA sekarang!',
                         buttonText: 'Coba sekarang!',
                         imagePath: 'assets/images/dummy.png',
-                        onTap: () => setState(() => _currentIndex = 1),
+                        onTap: () => _setPage(1),
                       ),
                       const SizedBox(height: 120),
                     ],
@@ -538,8 +589,11 @@ class _StudentDashboardState extends State<StudentDashboard>
     );
   }
 
+
+
   // ─── NOTCH NAVBAR: EXACTLY like reference photo ───
   Widget _buildNotchNavBar() {
+    if (_hideNavbar) return const SizedBox.shrink();
     final screenWidth = MediaQuery.of(context).size.width;
 
     return SizedBox(
@@ -571,7 +625,7 @@ class _StudentDashboardState extends State<StudentDashboard>
                   icon: Icons.home_rounded,
                   label: 'Beranda',
                   isActive: _currentIndex == 0,
-                  onTap: () => setState(() => _currentIndex = 0),
+                  onTap: () => _setPage(0),
                 ),
 
                 // Spacer for camera notch area
@@ -582,7 +636,7 @@ class _StudentDashboardState extends State<StudentDashboard>
                   icon: Icons.person_rounded,
                   label: 'Profil',
                   isActive: _currentIndex == 4,
-                  onTap: () => setState(() => _currentIndex = 4),
+                  onTap: () => _setPage(4),
                 ),
               ],
             ),
@@ -602,7 +656,7 @@ class _StudentDashboardState extends State<StudentDashboard>
                     child: Transform.scale(
                       scale: _cameraScale.value,
                       child: GestureDetector(
-                        onTap: () => setState(() => _currentIndex = 2),
+                        onTap: () => _setPage(2),
                         child: Container(
                           width: 66,
                           height: 66,
