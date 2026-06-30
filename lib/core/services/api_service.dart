@@ -8,6 +8,7 @@ import '../models/ranking_model.dart';
 import '../models/piket_team_model.dart';
 import '../models/schedule_model.dart';
 import '../models/settings_model.dart';
+import '../models/monthly_class_score_model.dart';
 import 'service_locator.dart';
 
 class ApiService {
@@ -168,6 +169,26 @@ class ApiService {
           .toList();
     } else {
       throw Exception('Gagal mengambil riwayat piket.');
+    }
+  }
+
+  /// Get monthly class scores history.
+  Future<List<MonthlyClassScore>> getMonthlyClassScores(String token) async {
+    final url = AppConfig.buildUrl('/monthly-class-scores');
+    final headers = _getHeaders(token);
+    headers['Cache-Control'] = 'no-cache';
+    final response = await locator.httpService.get(
+      url,
+      headers: headers,
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> list = jsonDecode(response.body) as List<dynamic>;
+      return list
+          .map((item) => MonthlyClassScore.fromJson(item as Map<String, dynamic>))
+          .toList();
+    } else {
+      throw Exception('Gagal mengambil nilai bulanan kelas.');
     }
   }
 

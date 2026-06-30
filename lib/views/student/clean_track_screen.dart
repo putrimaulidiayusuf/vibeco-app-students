@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/config/app_config.dart';
 import '../../core/models/submission_model.dart';
+import '../../core/models/monthly_class_score_model.dart';
 import '../../viewmodels/student/clean_track_viewmodel.dart';
 
 class CleanTrackScreen extends StatefulWidget {
@@ -39,6 +40,17 @@ class _CleanTrackScreenState extends State<CleanTrackScreen> {
     } catch (_) {
       return '--:--';
     }
+  }
+
+  String _getMonthName(int monthNum) {
+    const months = [
+      '', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    if (monthNum >= 1 && monthNum <= 12) {
+      return months[monthNum];
+    }
+    return '';
   }
 
   Widget _buildStatusBadge(String status) {
@@ -100,372 +112,596 @@ class _CleanTrackScreenState extends State<CleanTrackScreen> {
     final auth = Provider.of<AuthService>(context, listen: false);
     final token = auth.token;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAF8),
-      appBar: AppBar(
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: AppColors.emeraldGradient,
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8FAF8),
+        appBar: AppBar(
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(
+              gradient: AppColors.emeraldGradient,
+            ),
+          ),
+          title: const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Riwayat Kebersihan',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+              Text(
+                'Laporan piket harian & nilai bulanan kelas Anda',
+                style: TextStyle(fontSize: 12, color: Colors.white70),
+              ),
+            ],
+          ),
+          bottom: const TabBar(
+            indicatorColor: Colors.white,
+            indicatorWeight: 3,
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white70,
+            labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            unselectedLabelStyle: TextStyle(fontWeight: FontWeight.normal, fontSize: 14),
+            tabs: [
+              Tab(text: 'Laporan Harian'),
+              Tab(text: 'Nilai Bulanan'),
+            ],
+          ),
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+        ),
+        body: ChangeNotifierProvider<CleanTrackViewModel>(
+          create: (context) {
+            final vm = CleanTrackViewModel();
+            if (token != null) {
+              vm.fetchHistory(token);
+              vm.fetchMonthlyScores(token);
+            }
+            return vm;
+          },
+          child: Consumer<CleanTrackViewModel>(
+            builder: (context, viewModel, child) {
+              return TabBarView(
+                children: [
+                  _buildDailyTab(context, viewModel, token),
+                  _buildMonthlyTab(context, viewModel, token),
+                ],
+              );
+            },
           ),
         ),
-        title: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      ),
+    );
+  }
+
+  Widget _buildDailyTab(BuildContext context, CleanTrackViewModel viewModel, String? token) {
+    if (viewModel.isLoading && viewModel.submissions.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              'Riwayat Laporan Piket',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-            ),
-            Text(
-              'Daftar bukti kebersihan kelas Anda',
-              style: TextStyle(fontSize: 12, color: Colors.white70),
+            CircularProgressIndicator(color: AppColors.primaryGreen),
+            SizedBox(height: 16),
+            Text('Memuat riwayat laporan...', style: TextStyle(color: Colors.grey)),
+          ],
+        ),
+      );
+    }
+
+    if (viewModel.error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline_rounded, size: 56, color: AppColors.error),
+              const SizedBox(height: 16),
+              Text(
+                viewModel.error!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: () {
+                  if (token != null) viewModel.fetchHistory(token);
+                },
+                icon: const Icon(Icons.refresh),
+                label: const Text('Coba Lagi'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (viewModel.submissions.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: () async {
+          if (token != null) await viewModel.fetchHistory(token);
+        },
+        color: AppColors.primaryGreen,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            SizedBox(height: MediaQuery.of(context).size.height * 0.25),
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryGreen.withValues(alpha: 0.08),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.history_rounded,
+                      size: 56,
+                      color: AppColors.primaryGreen,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Belum Ada Riwayat Piket',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.emeraldDark,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Unggah bukti piket hari ini sekarang juga!',
+                    style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-      ),
-      body: ChangeNotifierProvider<CleanTrackViewModel>(
-        create: (context) {
-          final vm = CleanTrackViewModel();
-          if (token != null) {
-            vm.fetchHistory(token);
-          }
-          return vm;
-        },
-        child: Consumer<CleanTrackViewModel>(
-          builder: (context, viewModel, child) {
-            if (viewModel.isLoading && viewModel.submissions.isEmpty) {
-              return const Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircularProgressIndicator(color: AppColors.primaryGreen),
-                    SizedBox(height: 16),
-                    Text('Memuat riwayat laporan...', style: TextStyle(color: Colors.grey)),
-                  ],
-                ),
-              );
-            }
+      );
+    }
 
-            if (viewModel.error != null) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
+    return RefreshIndicator(
+      onRefresh: () async {
+        if (token != null) await viewModel.fetchHistory(token);
+      },
+      color: AppColors.primaryGreen,
+      child: ListView.builder(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
+        physics: const AlwaysScrollableScrollPhysics(),
+        itemCount: viewModel.submissions.length,
+        itemBuilder: (context, index) {
+          final sub = viewModel.submissions[index];
+          final displayScore = sub.displayScore;
+          final timeStr = _formatTime(sub.createdAt);
+          final hasScoreDetails = sub.dailyClassScore != null;
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+              border: Border.all(color: Colors.grey.shade100),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Card Header
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Icon(Icons.error_outline_rounded, size: 56, color: AppColors.error),
-                      const SizedBox(height: 16),
-                      Text(
-                        viewModel.error!,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.w500),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _formatDateIndonesian(sub.date),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                                color: AppColors.emeraldDark,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Pengirim: ${sub.submittedBy ?? "Siswa"} • $timeStr WIB',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 24),
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          if (token != null) viewModel.fetchHistory(token);
-                        },
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('Coba Lagi'),
-                      ),
+                      _buildStatusBadge(sub.status),
                     ],
                   ),
                 ),
-              );
-            }
 
-            if (viewModel.submissions.isEmpty) {
-              return RefreshIndicator(
-                onRefresh: () async {
-                  if (token != null) await viewModel.fetchHistory(token);
-                },
-                color: AppColors.primaryGreen,
-                child: ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  children: [
-                    SizedBox(height: MediaQuery.of(context).size.height * 0.25),
-                    Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(20),
+                // Photo Gallery (Thumbnails)
+                if (sub.photoUrls.isNotEmpty) ...[
+                  SizedBox(
+                    height: 96,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: sub.photoUrls.length,
+                      itemBuilder: (context, pIndex) {
+                        final path = sub.photoUrls[pIndex];
+                        final imageUrl = path.startsWith('http')
+                            ? path
+                            : '${AppConfig.baseUrl}/storage/$path';
+
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 10.0),
+                          child: Container(
                             decoration: BoxDecoration(
-                              color: AppColors.primaryGreen.withValues(alpha: 0.08),
-                              shape: BoxShape.circle,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey.shade200),
                             ),
-                            child: const Icon(
-                              Icons.history_rounded,
-                              size: 56,
-                              color: AppColors.primaryGreen,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(11),
+                              child: Image.network(
+                                imageUrl,
+                                headers: token != null ? {'Authorization': 'Bearer $token'} : null,
+                                width: 110,
+                                height: 96,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    width: 110,
+                                    height: 96,
+                                    color: Colors.grey.shade100,
+                                    child: const Icon(
+                                      Icons.broken_image_rounded,
+                                      color: Colors.grey,
+                                    ),
+                                  );
+                                },
+                              ),
                             ),
                           ),
-                          const SizedBox(height: 20),
-                          const Text(
-                            'Belum Ada Riwayat Piket',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.emeraldDark,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Unggah bukti piket hari ini sekarang juga!',
-                            style: TextStyle(fontSize: 13, color: Colors.grey[600]),
-                          ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
-                  ],
-                ),
-              );
-            }
+                  ),
+                  const SizedBox(height: 16),
+                ],
 
-            return RefreshIndicator(
-              onRefresh: () async {
-                if (token != null) await viewModel.fetchHistory(token);
-              },
-              color: AppColors.primaryGreen,
-              child: ListView.builder(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
-                physics: const AlwaysScrollableScrollPhysics(),
-                itemCount: viewModel.submissions.length,
-                itemBuilder: (context, index) {
-                  final sub = viewModel.submissions[index];
-                  final displayScore = sub.displayScore;
-                  final timeStr = _formatTime(sub.createdAt);
-                  final hasScoreDetails = sub.dailyClassScore != null;
-
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 16),
+                // Main info footer (Scores & AI summary)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                      border: Border.all(color: Colors.grey.shade100),
+                      color: const Color(0xFFF9FBF9),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFE8EFE8)),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
                       children: [
-                        // Card Header
-                        Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      _formatDateIndonesian(sub.date),
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 15,
-                                        color: AppColors.emeraldDark,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Pengirim: ${sub.submittedBy ?? "Siswa"} • $timeStr WIB',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey[600],
-                                      ),
-                                    ),
-                                  ],
+                              Text(
+                                'AI Score: ${sub.aiScore ?? "-"}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[700],
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
-                              _buildStatusBadge(sub.status),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  const Text(
+                                    'Skor Akhir: ',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.emeraldDark,
+                                    ),
+                                  ),
+                                  Text(
+                                    sub.isPending ? 'Menunggu Validasi' : displayScore.toString(),
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: sub.isPending
+                                          ? Colors.orange
+                                          : (displayScore >= 75
+                                              ? AppColors.success
+                                              : AppColors.error),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ],
                           ),
                         ),
-
-                        // Photo Gallery (Thumbnails)
-                        if (sub.photoUrls.isNotEmpty) ...[
-                          SizedBox(
-                            height: 96,
-                            child: ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              itemCount: sub.photoUrls.length,
-                              itemBuilder: (context, pIndex) {
-                                final path = sub.photoUrls[pIndex];
-                                final imageUrl = path.startsWith('http')
-                                    ? path
-                                    : '${AppConfig.baseUrl}/storage/$path';
-
-                                return Padding(
-                                  padding: const EdgeInsets.only(right: 10.0),
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: Colors.grey.shade200),
-                                    ),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(11),
-                                      child: Image.network(
-                                        imageUrl,
-                                        headers: token != null ? {'Authorization': 'Bearer $token'} : null,
-                                        width: 110,
-                                        height: 96,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) {
-                                          return Container(
-                                            width: 110,
-                                            height: 96,
-                                            color: Colors.grey.shade100,
-                                            child: const Icon(
-                                              Icons.broken_image_rounded,
-                                              color: Colors.grey,
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
+                        // Score badge circle
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: sub.isPending
+                                ? Colors.orange.withValues(alpha: 0.1)
+                                : (displayScore >= 75
+                                    ? AppColors.success.withValues(alpha: 0.1)
+                                    : AppColors.error.withValues(alpha: 0.1)),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: sub.isPending
+                                  ? Colors.orange.withValues(alpha: 0.3)
+                                  : (displayScore >= 75
+                                      ? AppColors.success.withValues(alpha: 0.3)
+                                      : AppColors.error.withValues(alpha: 0.3)),
                             ),
                           ),
-                          const SizedBox(height: 16),
-                        ],
-
-                        // Main info footer (Scores & AI summary)
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF9FBF9),
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: const Color(0xFFE8EFE8)),
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'AI Score: ${sub.aiScore ?? "-"}',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey[700],
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Row(
-                                        children: [
-                                          const Text(
-                                            'Skor Akhir: ',
-                                            style: TextStyle(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.bold,
-                                              color: AppColors.emeraldDark,
-                                            ),
-                                          ),
-                                          Text(
-                                            sub.isPending ? 'Menunggu Validasi' : displayScore.toString(),
-                                            style: TextStyle(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.bold,
-                                              color: sub.isPending
-                                                  ? Colors.orange
-                                                  : (displayScore >= 75
-                                                      ? AppColors.success
-                                                      : AppColors.error),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                // Score badge circle
-                                Container(
-                                  width: 44,
-                                  height: 44,
-                                  decoration: BoxDecoration(
-                                    color: sub.isPending
-                                        ? Colors.orange.withValues(alpha: 0.1)
-                                        : (displayScore >= 75
-                                            ? AppColors.success.withValues(alpha: 0.1)
-                                            : AppColors.error.withValues(alpha: 0.1)),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: sub.isPending
-                                          ? Colors.orange.withValues(alpha: 0.3)
-                                          : (displayScore >= 75
-                                              ? AppColors.success.withValues(alpha: 0.3)
-                                              : AppColors.error.withValues(alpha: 0.3)),
-                                    ),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      sub.isPending ? '?' : displayScore.toString(),
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: 16,
-                                        color: sub.isPending
-                                            ? Colors.orange
-                                            : (displayScore >= 75
-                                                ? AppColors.success
-                                                : AppColors.error),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
+                          child: Center(
+                            child: Text(
+                              sub.isPending ? '?' : displayScore.toString(),
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 16,
+                                color: sub.isPending
+                                    ? Colors.orange
+                                    : (displayScore >= 75
+                                        ? AppColors.success
+                                        : AppColors.error),
+                              ),
                             ),
                           ),
                         ),
+                      ],
+                    ),
+                  ),
+                ),
 
-                        // Action button & notes
-                        if (hasScoreDetails || (sub.notes != null && sub.notes!.isNotEmpty))
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                            child: Row(
-                              children: [
-                                if (hasScoreDetails)
-                                  Expanded(
-                                    child: OutlinedButton.icon(
-                                      style: OutlinedButton.styleFrom(
-                                        foregroundColor: AppColors.primaryGreen,
-                                        side: const BorderSide(color: AppColors.primaryGreen, width: 1.2),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        padding: const EdgeInsets.symmetric(vertical: 12),
-                                      ),
-                                      onPressed: () => _showScoreDetailsSheet(context, sub),
-                                      icon: const Icon(Icons.assessment_rounded, size: 18),
-                                      label: const Text(
-                                        'Rincian Penilaian',
-                                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                                      ),
-                                    ),
-                                  ),
-                              ],
+                // Action button & notes
+                if (hasScoreDetails || (sub.notes != null && sub.notes!.isNotEmpty))
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    child: Row(
+                      children: [
+                        if (hasScoreDetails)
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppColors.primaryGreen,
+                                side: const BorderSide(color: AppColors.primaryGreen, width: 1.2),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                              ),
+                              onPressed: () => _showScoreDetailsSheet(context, sub),
+                              icon: const Icon(Icons.assessment_rounded, size: 18),
+                              label: const Text(
+                                'Rincian Penilaian',
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                              ),
                             ),
                           ),
                       ],
                     ),
-                  );
-                },
-              ),
-            );
-          },
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildMonthlyTab(BuildContext context, CleanTrackViewModel viewModel, String? token) {
+    if (viewModel.isLoadingMonthly && viewModel.monthlyScores.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(color: AppColors.primaryGreen),
+            SizedBox(height: 16),
+            Text('Memuat nilai bulanan...', style: TextStyle(color: Colors.grey)),
+          ],
         ),
+      );
+    }
+
+    if (viewModel.errorMonthly != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline_rounded, size: 56, color: AppColors.error),
+              const SizedBox(height: 16),
+              Text(
+                viewModel.errorMonthly!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: () {
+                  if (token != null) viewModel.fetchMonthlyScores(token);
+                },
+                icon: const Icon(Icons.refresh),
+                label: const Text('Coba Lagi'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (viewModel.monthlyScores.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: () async {
+          if (token != null) await viewModel.fetchMonthlyScores(token);
+        },
+        color: AppColors.primaryGreen,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            SizedBox(height: MediaQuery.of(context).size.height * 0.25),
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryGreen.withValues(alpha: 0.08),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.calendar_month_rounded,
+                      size: 56,
+                      color: AppColors.primaryGreen,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Belum Ada Nilai Bulanan',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.emeraldDark,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Nilai bulanan kelas Anda akan tampil di sini.',
+                    style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: () async {
+        if (token != null) await viewModel.fetchMonthlyScores(token);
+      },
+      color: AppColors.primaryGreen,
+      child: ListView.builder(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
+        physics: const AlwaysScrollableScrollPhysics(),
+        itemCount: viewModel.monthlyScores.length,
+        itemBuilder: (context, index) {
+          final MonthlyClassScore mScore = viewModel.monthlyScores[index];
+          final monthName = _getMonthName(mScore.month);
+          final displayScore = mScore.score;
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+              border: Border.all(color: Colors.grey.shade100),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  // Icon/Date Badge
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryGreen.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(
+                      Icons.calendar_month_rounded,
+                      color: AppColors.primaryGreen,
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+
+                  // Score Details
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '$monthName ${mScore.year}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: AppColors.emeraldDark,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Kelas: ${mScore.schoolClassName}',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Score display
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: displayScore >= 75
+                          ? AppColors.success.withValues(alpha: 0.1)
+                          : AppColors.error.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: displayScore >= 75
+                            ? AppColors.success.withValues(alpha: 0.3)
+                            : AppColors.error.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        displayScore.toInt().toString(),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                          color: displayScore >= 75
+                              ? AppColors.success
+                              : AppColors.error,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
