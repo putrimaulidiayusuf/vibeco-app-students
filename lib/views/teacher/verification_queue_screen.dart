@@ -154,6 +154,7 @@ class VerificationQueueScreen extends StatelessWidget {
                                                     sub.photoUrls[0].startsWith('http') 
                                                         ? sub.photoUrls[0] 
                                                         : '${AppConfig.baseUrl}/storage/${sub.photoUrls[0]}',
+                                                    headers: token != null ? {'Authorization': 'Bearer $token'} : null,
                                                     width: 70,
                                                     height: 70,
                                                     fit: BoxFit.cover,

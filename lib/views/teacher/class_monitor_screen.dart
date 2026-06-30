@@ -247,6 +247,7 @@ class _ClassMonitorScreenState extends State<ClassMonitorScreen> {
                                                     borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
                                                     child: Image.network(
                                                       imageUrl,
+                                                      headers: token != null ? {'Authorization': 'Bearer $token'} : null,
                                                       width: 60,
                                                       height: 60,
                                                       fit: BoxFit.cover,

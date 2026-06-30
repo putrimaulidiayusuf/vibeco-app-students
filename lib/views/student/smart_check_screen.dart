@@ -497,6 +497,7 @@ class _SmartCheckScreenState extends State<SmartCheckScreen> {
                                                 borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
                                                 child: Image.network(
                                                   imageUrl,
+                                                  headers: {'Authorization': 'Bearer $token'},
                                                   width: 80,
                                                   fit: BoxFit.cover,
                                                   errorBuilder: (context, error, stackTrace) {

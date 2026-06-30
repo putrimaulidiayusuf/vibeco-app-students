@@ -120,6 +120,8 @@ class _VerifyDetailsScreenState extends State<VerifyDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = Provider.of<AuthService>(context, listen: false);
+    final token = auth.token;
     final sub = widget.submission;
     // Safe findings join with null-check
     final findingsStr = sub.findings.isNotEmpty ? sub.findings.join(', ') : 'Tidak ada temuan';
@@ -184,6 +186,7 @@ class _VerifyDetailsScreenState extends State<VerifyDetailsScreen> {
                                       child: InteractiveViewer(
                                         child: Image.network(
                                           imageUrl,
+                                          headers: token != null ? {'Authorization': 'Bearer $token'} : null,
                                           fit: BoxFit.contain,
                                           errorBuilder: (context, error, stackTrace) {
                                             return Container(
@@ -198,6 +201,7 @@ class _VerifyDetailsScreenState extends State<VerifyDetailsScreen> {
                                 },
                                 child: Image.network(
                                   imageUrl,
+                                  headers: token != null ? {'Authorization': 'Bearer $token'} : null,
                                   width: 280,
                                   height: 200,
                                   fit: BoxFit.cover,

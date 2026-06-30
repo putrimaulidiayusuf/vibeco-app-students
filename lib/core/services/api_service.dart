@@ -6,6 +6,7 @@ import '../models/user_model.dart';
 import '../models/submission_model.dart';
 import '../models/ranking_model.dart';
 import '../models/piket_team_model.dart';
+import '../models/schedule_model.dart';
 import '../models/settings_model.dart';
 import 'service_locator.dart';
 
@@ -423,6 +424,40 @@ class ApiService {
       return jsonDecode(response.body) as Map<String, dynamic>;
     } else {
       throw Exception('Gagal memantau kebersihan kelas.');
+    }
+  }
+
+  /// Get the logged-in student's class schedule (properly parsed).
+  Future<ClassSchedule?> getMyClassSchedule(String token) async {
+    final url = AppConfig.buildUrl('/schedule/my-team');
+    final response = await locator.httpService.get(
+      url,
+      headers: _getHeaders(token),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data == null || (data is Map && data.isEmpty)) return null;
+      return ClassSchedule.fromJson(data as Map<String, dynamic>);
+    } else {
+      throw Exception('Gagal mengambil jadwal piket kelas Anda.');
+    }
+  }
+
+  /// Get today's duty students (properly parsed).
+  Future<TodayDuty?> getTodayDuty(String token) async {
+    final url = AppConfig.buildUrl('/piket/today-duty');
+    final response = await locator.httpService.get(
+      url,
+      headers: _getHeaders(token),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data == null || (data is Map && data.isEmpty)) return null;
+      return TodayDuty.fromJson(data as Map<String, dynamic>);
+    } else {
+      throw Exception('Gagal mengambil jadwal piket hari ini.');
     }
   }
 }

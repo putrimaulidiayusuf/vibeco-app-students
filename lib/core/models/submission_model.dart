@@ -1,3 +1,69 @@
+class AspekPenilaianDetail {
+  final int skor;
+  final String catatan;
+
+  AspekPenilaianDetail({required this.skor, required this.catatan});
+
+  factory AspekPenilaianDetail.fromJson(Map<String, dynamic> json) {
+    return AspekPenilaianDetail(
+      skor: json['skor'] is int ? json['skor'] : int.tryParse(json['skor']?.toString() ?? '0') ?? 0,
+      catatan: json['catatan']?.toString() ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'skor': skor,
+      'catatan': catatan,
+    };
+  }
+}
+
+class DailyClassScore {
+  final int id;
+  final int score;
+  final String kategori;
+  final Map<String, AspekPenilaianDetail> aspekPenilaian;
+  final List<String> saranPerbaikan;
+
+  DailyClassScore({
+    required this.id,
+    required this.score,
+    required this.kategori,
+    required this.aspekPenilaian,
+    required this.saranPerbaikan,
+  });
+
+  factory DailyClassScore.fromJson(Map<String, dynamic> json) {
+    final rawAspek = json['aspek_penilaian'] as Map<String, dynamic>? ?? {};
+    final aspek = rawAspek.map((key, val) => MapEntry(
+          key,
+          AspekPenilaianDetail.fromJson(val as Map<String, dynamic>),
+        ));
+
+    final rawSaran = json['saran_perbaikan'] as List<dynamic>? ?? [];
+    final saran = rawSaran.map((s) => s.toString()).toList();
+
+    return DailyClassScore(
+      id: json['id'] is int ? json['id'] : int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+      score: json['score'] is int ? json['score'] : int.tryParse(json['score']?.toString() ?? '0') ?? 0,
+      kategori: json['kategori']?.toString() ?? '',
+      aspekPenilaian: aspek,
+      saranPerbaikan: saran,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'score': score,
+      'kategori': kategori,
+      'aspek_penilaian': aspekPenilaian.map((k, v) => MapEntry(k, v.toJson())),
+      'saran_perbaikan': saranPerbaikan,
+    };
+  }
+}
+
 class PiketSubmission {
   final int id;
   final int? teamId;
@@ -15,6 +81,7 @@ class PiketSubmission {
   final String? verifiedBy;
   final String? createdAt;
   final String? updatedAt;
+  final DailyClassScore? dailyClassScore;
 
   PiketSubmission({
     required this.id,
@@ -33,6 +100,7 @@ class PiketSubmission {
     this.verifiedBy,
     this.createdAt,
     this.updatedAt,
+    this.dailyClassScore,
   });
 
   bool get isPending => status == 'pending';
@@ -53,6 +121,10 @@ class PiketSubmission {
       } else if (json['findings'] is String) {
         parsedFindings = [json['findings'].toString()];
       }
+    } else if (json['ai_findings'] != null && json['ai_findings'] is List) {
+      parsedFindings = (json['ai_findings'] as List)
+          .map((f) => f.toString())
+          .toList();
     }
 
     // Parse photo URLs
@@ -74,8 +146,8 @@ class PiketSubmission {
               ? json['team_id']
               : int.tryParse(json['team_id'].toString()))
           : null,
-      className: json['class_name']?.toString(),
-      date: json['date']?.toString() ?? '',
+      className: json['class_name']?.toString() ?? json['school_class']?['name']?.toString(),
+      date: json['date']?.toString() ?? json['submission_date']?.toString() ?? '',
       aiScore: json['ai_score'] != null
           ? (json['ai_score'] is int
               ? json['ai_score']
@@ -96,10 +168,13 @@ class PiketSubmission {
       longitude: json['longitude'] != null
           ? (json['longitude'] as num).toDouble()
           : null,
-      submittedBy: json['submitted_by']?.toString(),
-      verifiedBy: json['verified_by']?.toString(),
+      submittedBy: json['submitted_by']?.toString() ?? json['student']?['name']?.toString(),
+      verifiedBy: json['verified_by']?.toString() ?? json['verifier']?['name']?.toString(),
       createdAt: json['created_at']?.toString(),
       updatedAt: json['updated_at']?.toString(),
+      dailyClassScore: json['daily_class_score'] != null
+          ? DailyClassScore.fromJson(json['daily_class_score'] as Map<String, dynamic>)
+          : null,
     );
   }
 
@@ -121,6 +196,7 @@ class PiketSubmission {
       'verified_by': verifiedBy,
       'created_at': createdAt,
       'updated_at': updatedAt,
+      'daily_class_score': dailyClassScore?.toJson(),
     };
   }
 }

@@ -10,7 +10,12 @@ import '../../viewmodels/student/smart_check_viewmodel.dart';
 
 class CameraUploadScreen extends StatefulWidget {
   final VoidCallback onViewHistory;
-  const CameraUploadScreen({super.key, required this.onViewHistory});
+  final ValueChanged<bool>? onShowCameraChanged;
+  const CameraUploadScreen({
+    super.key,
+    required this.onViewHistory,
+    this.onShowCameraChanged,
+  });
 
   @override
   State<CameraUploadScreen> createState() => _CameraUploadScreenState();
@@ -18,6 +23,7 @@ class CameraUploadScreen extends StatefulWidget {
 
 class _CameraUploadScreenState extends State<CameraUploadScreen> {
   SmartCheckViewModel? _statusViewModel;
+  bool _lastShowCamera = false;
 
   @override
   void initState() {
@@ -182,6 +188,16 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
             return const Center(child: CircularProgressIndicator());
           }
 
+          final showCamera = uploadVm.showCamera && statusVm.canUpload && uploadVm.aiScore == null;
+          if (showCamera != _lastShowCamera) {
+            _lastShowCamera = showCamera;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                widget.onShowCameraChanged?.call(showCamera);
+              }
+            });
+          }
+
           String headerTitle = 'Unggah Foto Piket Kelas';
           String headerSubtitle = 'Wajib mengunggah semua 3 foto dengan sudut pandang berbeda untuk dianalisis oleh AI.';
           VoidCallback? onBack = widget.onViewHistory;
@@ -195,11 +211,8 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
           } else if (!uploadVm.showCamera) {
             headerTitle = 'Daftar Kehadiran Regu Piket';
             headerSubtitle = 'Isi status kehadiran setiap anggota regu piket hari ini sebelum mengambil foto.';
-          } else {
-            // However, when on camera page, we probably want back button to return to attendance page.
-            // But following the user code exactly:
           }
-          
+
           if (!uploadVm.showCamera && statusVm.canUpload && uploadVm.aiScore == null) {
              onBack = widget.onViewHistory;
           } else if (uploadVm.showCamera && statusVm.canUpload && uploadVm.aiScore == null) {
@@ -317,55 +330,92 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
             final isAlreadySubmitted = statusVm.isAlreadySubmittedToday;
             bodyWidget = Center(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24.0),
+                padding: const EdgeInsets.all(20.0),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Card(
-                      color: isAlreadySubmitted ? AppTheme.success.withValues(alpha: 0.1) : Colors.red.shade50,
-                      elevation: 2,
-                      child: Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              isAlreadySubmitted ? Icons.check_circle_rounded : Icons.lock_rounded,
-                              color: isAlreadySubmitted ? AppTheme.success : AppTheme.error,
-                              size: 56,
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: isAlreadySubmitted
+                              ? AppColors.primaryGreen.withValues(alpha: 0.1)
+                              : Colors.red.shade100,
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 16,
+                            offset: const Offset(0, 8),
+                          )
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: isAlreadySubmitted
+                                  ? AppColors.primaryGreen.withValues(alpha: 0.1)
+                                  : Colors.red.shade50,
+                              shape: BoxShape.circle,
                             ),
-                            const SizedBox(height: 16),
-                            Text(
-                              isAlreadySubmitted ? 'Piket Hari Ini Selesai' : 'Piket Cek Dinonaktifkan',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: isAlreadySubmitted ? AppTheme.success : AppTheme.error,
+                            child: Icon(
+                              isAlreadySubmitted ? Icons.check_circle_rounded : Icons.lock_rounded,
+                              color: isAlreadySubmitted ? AppColors.primaryGreen : AppColors.error,
+                              size: 48,
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          Text(
+                            isAlreadySubmitted ? 'Piket Hari Ini Selesai' : 'Pengiriman Terkunci',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: isAlreadySubmitted ? AppColors.emeraldDark : AppColors.error,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            isAlreadySubmitted
+                                ? 'Laporan piket kelas Anda hari ini telah berhasil dikirim oleh ${statusVm.submittedByName ?? "anggota regu Anda"}.\n\nSetiap regu hanya perlu mengirimkan 1 laporan per hari.'
+                                : 'Anda belum dapat mengirimkan laporan piket. Pastikan semua persyaratan berikut terpenuhi:',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Colors.black54,
+                              height: 1.5,
+                            ),
+                          ),
+                          if (!isAlreadySubmitted) ...[
+                            const SizedBox(height: 20),
+                            _buildStatusIndicator('Lokasi berada di Sekolah', statusVm.isInsideGeofence),
+                            _buildStatusIndicator('Waktu piket sesuai jadwal', statusVm.isWithinTimeWindow),
+                            _buildStatusIndicator('Hari sekolah (Senin - Sabtu)', !statusVm.isHoliday),
+                            _buildStatusIndicator('Jadwal piket Anda hari ini', statusVm.isOnDutyToday),
+                          ],
+                          const SizedBox(height: 24),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () => statusVm.loadStatusAndConfig(token),
+                              icon: const Icon(Icons.refresh_rounded, size: 18),
+                              label: const Text('Refresh Status'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.emeraldMid,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 12),
-                            Text(
-                              isAlreadySubmitted
-                                  ? 'Laporan piket hari ini sudah dikirim oleh ${statusVm.submittedByName ?? "anggota regu Anda"}.\nSetiap regu hanya perlu mengirim 1 laporan per hari.'
-                                  : 'Pengiriman foto piket hanya dapat dilakukan jika Anda memenuhi syarat berikut:',
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(fontSize: 13, color: Colors.black87),
-                            ),
-                            if (!isAlreadySubmitted) ...[
-                              const SizedBox(height: 16),
-                              _buildStatusIndicator('Lokasi di Sekolah', statusVm.isInsideGeofence),
-                              _buildStatusIndicator('Dalam Batas Waktu Piket', statusVm.isWithinTimeWindow),
-                              _buildStatusIndicator('Hari Sekolah (Senin-Sabtu)', !statusVm.isHoliday),
-                              _buildStatusIndicator('Jadwal Piket Anda Hari Ini', statusVm.isOnDutyToday),
-                            ],
-                            const SizedBox(height: 24),
-                            OutlinedButton.icon(
-                              onPressed: () => statusVm.loadStatusAndConfig(token),
-                              icon: const Icon(Icons.refresh_rounded),
-                              label: const Text('Refresh Status'),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 120),
@@ -540,10 +590,13 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
                       children: [
                         Row(
                           children: [
-                            IconButton(
-                              icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
-                              onPressed: onBack,
-                            ),
+                            if (showCamera)
+                              IconButton(
+                                icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+                                onPressed: onBack,
+                              )
+                            else
+                              const SizedBox(width: 48, height: 48),
                             Expanded(
                               child: Text(
                                 headerTitle,
@@ -581,22 +634,32 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
   }
 
   Widget _buildStatusIndicator(String title, bool isValid) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: isValid ? const Color(0xFFF1F8F5) : const Color(0xFFFFF5F5),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isValid ? const Color(0xFFE2F0EA) : const Color(0xFFFFE5E5),
+        ),
+      ),
       child: Row(
         children: [
           Icon(
-            isValid ? Icons.check_circle_outline_rounded : Icons.cancel_outlined,
+            isValid ? Icons.check_circle_rounded : Icons.cancel_rounded,
             color: isValid ? AppTheme.success : AppTheme.error,
             size: 20,
           ),
-          const SizedBox(width: 10),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: isValid ? Colors.black87 : Colors.black54,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: isValid ? AppColors.emeraldDark : AppTheme.error,
+              ),
             ),
           ),
         ],
