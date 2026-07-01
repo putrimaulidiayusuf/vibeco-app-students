@@ -1,5 +1,5 @@
 name: vibeco_app
-description: "ZieClean - School Cleanliness Management App"
+description: "VibeCo- School Cleanliness Management App"
 publish_to: 'none'
 version: 0.1.0+1
 
@@ -10,6 +10,8 @@ dependencies:
   flutter:
     sdk: flutter
   http: ^1.2.0
+  camera: ^0.11.0
+  image: ^4.1.0
   geolocator: ^11.0.0
   image_picker: ^1.0.0
   shared_preferences: ^2.2.0
@@ -34,5 +36,3 @@ flutter:
 
 flutter_native_splash:
   color: "#06241B"
-  background_image: assets/images/splash_gradient_bg.png
-  image: assets/images/native_splash_bg.png

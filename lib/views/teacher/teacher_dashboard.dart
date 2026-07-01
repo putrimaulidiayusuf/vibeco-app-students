@@ -37,7 +37,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                 ),
                 SizedBox(height: 16),
                 Text(
-                  'Selamat Datang Guru ZieClean!',
+                  'Selamat Datang Guru VibeCo!',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 8),
@@ -146,9 +146,9 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
               final confirm = await showDialog<bool>(
                 context: context,
                 builder: (context) => AlertDialog(
-                  title: const Text('Keluar Aplikasi'),
+                  title: const Text('Keluar'),
                   content: const Text(
-                    'Apakah Anda yakin ingin keluar dari ZieClean?',
+                    'Apakah Anda yakin ingin keluar dari VibeCo?',
                   ),
                   actions: [
                     TextButton(

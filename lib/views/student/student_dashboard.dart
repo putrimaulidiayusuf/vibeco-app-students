@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/services/auth_service.dart';
-import 'smart_check_screen.dart';
 import 'praba_ai_screen.dart';
 import 'camera_upload_screen.dart';
 import 'clean_rank_screen.dart';
@@ -292,7 +291,8 @@ class _StudentDashboardState extends State<StudentDashboard>
                         title: 'Kirim Foto Kelas Anda',
                         subtitle: 'Setor pengerjaan piket anda dan dapatkan penilaian!',
                         buttonText: 'Klik disini',
-                        imagePath: 'assets/images/dummy.png',
+                        imagePath: 'assets/images/foto.png',
+                        imageSize: 85,
                         onTap: () => Navigator.push(
                           context,
                           _slideRoute(
@@ -411,6 +411,7 @@ class _StudentDashboardState extends State<StudentDashboard>
     required String buttonText,
     required String imagePath,
     required VoidCallback onTap,
+    double imageSize = 120,
   }) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -484,12 +485,12 @@ class _StudentDashboardState extends State<StudentDashboard>
             borderRadius: BorderRadius.circular(16),
             child: Image.asset(
               imagePath,
-              width: 120,
-              height: 120,
+              width: imageSize,
+              height: imageSize,
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => const SizedBox(
-                width: 120,
-                height: 120,
+              errorBuilder: (context, error, stackTrace) => SizedBox(
+                width: imageSize,
+                height: imageSize,
               ),
             ),
           ),
@@ -497,6 +498,7 @@ class _StudentDashboardState extends State<StudentDashboard>
       ),
     );
   }
+
 
   Widget _buildGeofenceCard(SmartCheckViewModel statusVm) {
     final bool isInsideSchool = statusVm.isInsideGeofence;

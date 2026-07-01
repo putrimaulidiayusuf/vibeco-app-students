@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Centralized color palette for VibEco / ZieClean app.
+/// Centralized color palette for VibeCo app.
 class AppColors {
   AppColors._();
 
