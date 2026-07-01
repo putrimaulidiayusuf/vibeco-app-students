@@ -11,28 +11,15 @@ class PiketScheduleScreen extends StatefulWidget {
   State<PiketScheduleScreen> createState() => _PiketScheduleScreenState();
 }
 
-class _PiketScheduleScreenState extends State<PiketScheduleScreen>
-    with TickerProviderStateMixin {
-  late AnimationController _headerAnimationController;
-  late Animation<double> _headerFadeAnimation;
+class _PiketScheduleScreenState extends State<PiketScheduleScreen> {
 
   @override
   void initState() {
     super.initState();
-    _headerAnimationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
-    _headerFadeAnimation = CurvedAnimation(
-      parent: _headerAnimationController,
-      curve: Curves.easeOutCubic,
-    );
-    _headerAnimationController.forward();
   }
 
   @override
   void dispose() {
-    _headerAnimationController.dispose();
     super.dispose();
   }
 
@@ -62,10 +49,8 @@ class _PiketScheduleScreenState extends State<PiketScheduleScreen>
         body: Column(
           children: [
             // ─── PREMIUM GRADIENT HEADER (same as CleanRankScreen) ───
-            FadeTransition(
-              opacity: _headerFadeAnimation,
-              child: Container(
-                width: double.infinity,
+            Container(
+              width: double.infinity,
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
                     colors: [Color(0xFF0F4D3A), Color(0xFF06241B)],
@@ -227,7 +212,6 @@ class _PiketScheduleScreenState extends State<PiketScheduleScreen>
                     ),
                   ),
                 ),
-              ),
             ),
             // ─── BODY CONTENT ───
             Expanded(

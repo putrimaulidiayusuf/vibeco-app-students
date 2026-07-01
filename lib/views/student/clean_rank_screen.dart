@@ -694,105 +694,224 @@ class _CleanRankScreenState extends State<CleanRankScreen>
         builder: (context, viewModel, child) {
           return Scaffold(
             backgroundColor: const Color(0xFFF8FAF8),
-            appBar: AppBar(
-              flexibleSpace: Container(
-                decoration: const BoxDecoration(
-                  gradient: AppColors.emeraldGradient,
-                ),
-              ),
-              iconTheme: const IconThemeData(color: Colors.white),
-              title: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Peringkat Kebersihan',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+            body: Column(
+              children: [
+                // ─── PREMIUM GRADIENT HEADER ───
+                Container(
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF0F4D3A), Color(0xFF06241B)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                  ),
-                  Text(
-                    'Kompetisi kebersihan kelas dan hari piket',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 11,
-                      color: Colors.white70,
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(32),
+                      bottomRight: Radius.circular(32),
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Color(0xFF06241B),
+                        blurRadius: 20,
+                        offset: Offset(0, 8),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              bottom: PreferredSize(
-                preferredSize: const Size.fromHeight(50),
-                child: TabBar(
-                  controller: _mainTabController,
-                  labelColor: Colors.white,
-                  unselectedLabelColor: Colors.white.withValues(alpha: 0.6),
-                  indicatorColor: Colors.white,
-                  indicatorWeight: 3.5,
-                  indicatorSize: TabBarIndicatorSize.label,
-                  dividerColor: Colors.transparent,
-                  labelStyle: GoogleFonts.plusJakartaSans(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                  tabs: const [
-                    Tab(text: 'Peringkat Kelas'),
-                    Tab(text: 'Hari Terbersih'),
-                  ],
-                ),
-              ),
-              elevation: 0,
-              backgroundColor: Colors.transparent,
-            ),
-            body: viewModel.error != null
-                ? Center(
+                  child: SafeArea(
+                    bottom: false,
                     child: Padding(
-                      padding: const EdgeInsets.all(24.0),
+                      padding: const EdgeInsets.fromLTRB(20, 18, 20, 22),
                       child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(
-                            Icons.error_outline_rounded,
-                            size: 48,
-                            color: AppColors.error,
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            viewModel.error!,
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.plusJakartaSans(
-                              color: AppColors.error,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          ElevatedButton.icon(
-                            onPressed: () => _refreshAll(viewModel),
-                            icon: const Icon(Icons.refresh),
-                            label: Text(
-                              'Coba Lagi',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontWeight: FontWeight.bold,
+                          // Header row with back button + icon + title
+                          Row(
+                            children: [
+                              // Back Button
+                              Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(14),
+                                  onTap: () => Navigator.pop(context),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(
+                                        color: Colors.white.withValues(alpha: 0.2),
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.arrow_back_ios_new_rounded,
+                                      color: Colors.white,
+                                      size: 18,
+                                    ),
+                                  ),
+                                ),
                               ),
+                              const SizedBox(width: 16),
+                              // Icon
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.12),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.leaderboard_rounded,
+                                  color: Colors.white,
+                                  size: 22,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              // Title & subtitle
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Peringkat Kebersihan',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                        letterSpacing: 0.3,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    const Text(
+                                      'Kompetisi kebersihan kelas & hari piket',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.white60,
+                                        letterSpacing: 0.2,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 22),
+                          // Premium sliding TabBar
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(28),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.08),
+                                width: 1,
+                              ),
+                            ),
+                            child: TabBar(
+                              controller: _mainTabController,
+                              labelColor: const Color(0xFF06241B),
+                              unselectedLabelColor: Colors.white,
+                              indicatorSize: TabBarIndicatorSize.tab,
+                              indicator: const BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.all(Radius.circular(24)),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black12,
+                                    blurRadius: 8,
+                                    offset: Offset(0, 3),
+                                  ),
+                                ],
+                              ),
+                              dividerColor: Colors.transparent,
+                              labelStyle: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                letterSpacing: 0.3,
+                              ),
+                              unselectedLabelStyle: const TextStyle(
+                                fontWeight: FontWeight.w500,
+                                fontSize: 13,
+                              ),
+                              tabs: const [
+                                Tab(
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.emoji_events_rounded, size: 16),
+                                      SizedBox(width: 6),
+                                      Text('Peringkat Kelas'),
+                                    ],
+                                  ),
+                                ),
+                                Tab(
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.wb_sunny_rounded, size: 16),
+                                      SizedBox(width: 6),
+                                      Text('Hari Terbersih'),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
                     ),
-                  )
-                : TabBarView(
-                    controller: _mainTabController,
-                    children: [
-                      _buildClassRankingTabContainer(
-                        viewModel,
-                        currentUserClass,
-                      ),
-                      _buildClassRankingListBreakdown(
-                        viewModel,
-                        viewModel.classRankings,
-                      ),
-                    ],
                   ),
+                ),
+                // ─── BODY ───
+                Expanded(
+                  child: viewModel.error != null
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24.0),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.error_outline_rounded,
+                                  size: 48,
+                                  color: AppColors.error,
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  viewModel.error!,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    color: AppColors.error,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                ElevatedButton.icon(
+                                  onPressed: () => _refreshAll(viewModel),
+                                  icon: const Icon(Icons.refresh),
+                                  label: const Text('Coba Lagi'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      : TabBarView(
+                          controller: _mainTabController,
+                          children: [
+                            _buildClassRankingTabContainer(
+                              viewModel,
+                              currentUserClass,
+                            ),
+                            _buildClassRankingListBreakdown(
+                              viewModel,
+                              viewModel.classRankings,
+                            ),
+                          ],
+                        ),
+                ),
+              ],
+            ),
           );
         },
       ),

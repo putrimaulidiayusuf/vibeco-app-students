@@ -11,10 +11,12 @@ import '../../viewmodels/student/smart_check_viewmodel.dart';
 class CameraUploadScreen extends StatefulWidget {
   final VoidCallback onViewHistory;
   final ValueChanged<bool>? onShowCameraChanged;
+  final bool asRoute;
   const CameraUploadScreen({
     super.key,
     required this.onViewHistory,
     this.onShowCameraChanged,
+    this.asRoute = false,
   });
 
   @override
@@ -207,10 +209,6 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
       ],
       child: Consumer2<CameraUploadViewModel, SmartCheckViewModel>(
         builder: (context, uploadVm, statusVm, child) {
-          if (statusVm.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
           final showCamera =
               uploadVm.showCamera &&
               statusVm.canUpload &&
@@ -229,7 +227,10 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
               'Wajib mengunggah semua 3 foto dengan sudut pandang berbeda untuk dianalisis oleh AI.';
           VoidCallback? onBack = widget.onViewHistory;
 
-          if (uploadVm.aiScore != null) {
+          if (statusVm.isLoading) {
+            headerTitle = 'Memuat...';
+            headerSubtitle = 'Mohon tunggu sebentar.';
+          } else if (uploadVm.aiScore != null) {
             headerTitle = 'Hasil Analisis AI';
             headerSubtitle =
                 'Berikut adalah hasil penilaian kebersihan kelas Anda hari ini.';
@@ -253,7 +254,9 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
           }
 
           Widget bodyWidget;
-          if (uploadVm.aiScore != null) {
+          if (statusVm.isLoading) {
+            bodyWidget = const Center(child: CircularProgressIndicator());
+          } else if (uploadVm.aiScore != null) {
             bodyWidget = SingleChildScrollView(
               padding: const EdgeInsets.all(24.0),
               child: Column(
@@ -674,67 +677,85 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
             );
           }
 
-          return Column(
-            children: [
-              // FIXED EMERALD GRADIENT HEADER
-              Container(
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  gradient: AppColors.emeraldGradient,
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(30),
-                    bottomRight: Radius.circular(30),
+          return Scaffold(
+            backgroundColor: const Color(0xFFF8FAF8),
+            body: Column(
+              children: [
+                // FIXED EMERALD GRADIENT HEADER
+                Container(
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    gradient: AppColors.emeraldGradient,
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(30),
+                      bottomRight: Radius.circular(30),
+                    ),
                   ),
-                ),
-                child: SafeArea(
-                  bottom: false,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Row(
-                          children: [
-                            if (showCamera)
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.arrow_back_rounded,
-                                  color: Colors.white,
+                  child: SafeArea(
+                    bottom: false,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            children: [
+                              if (showCamera || widget.asRoute)
+                                Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(14),
+                                    onTap: onBack,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(alpha: 0.12),
+                                        borderRadius: BorderRadius.circular(14),
+                                        border: Border.all(
+                                          color: Colors.white.withValues(alpha: 0.2),
+                                        ),
+                                      ),
+                                      child: const Icon(
+                                        Icons.arrow_back_ios_new_rounded,
+                                        color: Colors.white,
+                                        size: 18,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              else
+                                const SizedBox(width: 48, height: 48),
+                              Expanded(
+                                child: Text(
+                                  headerTitle,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
                                 ),
-                                onPressed: onBack,
-                              )
-                            else
-                              const SizedBox(width: 48, height: 48),
-                            Expanded(
-                              child: Text(
-                                headerTitle,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                textAlign: TextAlign.center,
                               ),
-                            ),
-                            const SizedBox(width: 48, height: 48), // spacer
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          headerSubtitle,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.9),
-                            fontSize: 13,
+                              const SizedBox(width: 48, height: 48), // spacer
+                            ],
                           ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+                          const SizedBox(height: 8),
+                          Text(
+                            headerSubtitle,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.9),
+                              fontSize: 13,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-              Expanded(child: bodyWidget),
-            ],
+                Expanded(child: bodyWidget),
+              ],
+            ),
           );
         },
       ),

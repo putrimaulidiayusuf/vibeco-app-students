@@ -27,7 +27,7 @@ class _StudentDashboardState extends State<StudentDashboard>
   void _setPage(int index) {
     setState(() {
       _currentIndex = index;
-      if (index != 2) {
+      if (index != 1) {
         _hideNavbar = false;
       }
     });
@@ -42,9 +42,8 @@ class _StudentDashboardState extends State<StudentDashboard>
   void initState() {
     super.initState();
     _screens = [
-      const SmartCheckScreen(),
-      const PrabaAiScreen(),
-      CameraUploadScreen(
+      const SizedBox.shrink(), // 0: home (shown via _buildHomeDashboard)
+      CameraUploadScreen(      // 1: camera (from navbar)
         onViewHistory: () {
           _setPage(0);
         },
@@ -54,8 +53,7 @@ class _StudentDashboardState extends State<StudentDashboard>
           });
         },
       ),
-      const SizedBox(), // CleanRankScreen is now pushed as a separate page
-      const ProfileScreen(),
+      const ProfileScreen(),   // 2: profile (from navbar)
     ];
 
     _animController = AnimationController(
@@ -80,21 +78,23 @@ class _StudentDashboardState extends State<StudentDashboard>
     super.dispose();
   }
 
-  String _getTitle() {
-    switch (_currentIndex) {
-      case 0:
-        return 'SmartCheck';
-      case 1:
-        return 'PRABA AI';
-      case 2:
-        return 'Unggah Foto Piket';
-      case 3:
-        return 'Ranking';
-      case 4:
-        return 'Profil';
-      default:
-        return 'ZieClean';
-    }
+  // ─── SLIDE RIGHT-TO-LEFT ROUTE ───
+  Route _slideRoute(Widget page) {
+    return PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) => page,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        const begin = Offset(1.0, 0.0);
+        const end = Offset.zero;
+        const curve = Curves.easeOutCubic;
+        final tween = Tween(begin: begin, end: end)
+            .chain(CurveTween(curve: curve));
+        return SlideTransition(
+          position: animation.drive(tween),
+          child: child,
+        );
+      },
+      transitionDuration: const Duration(milliseconds: 350),
+    );
   }
 
   @override
@@ -131,33 +131,7 @@ class _StudentDashboardState extends State<StudentDashboard>
         builder: (context, statusVm, dashVm, child) {
           return Scaffold(
             backgroundColor: const Color(0xFFF8FAF8),
-            appBar:
-                (_currentIndex == 0 ||
-                    _currentIndex == 2 ||
-                    _currentIndex == 3 ||
-                    _currentIndex == 4)
-                ? null
-                : AppBar(
-                    title: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _getTitle(),
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          '${user.name} • Kelas ${user.className ?? "-"}',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Colors.white70,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+            appBar: null,
             body: _currentIndex == 0
                 ? _buildHomeDashboard(user, statusVm, dashVm)
                 : _screens[_currentIndex],
@@ -199,7 +173,7 @@ class _StudentDashboardState extends State<StudentDashboard>
               child: Row(
                 children: [
                   GestureDetector(
-                    onTap: () => _setPage(4),
+                    onTap: () => _setPage(2),
                     child: Container(
                       width: 52,
                       height: 52,
@@ -243,7 +217,7 @@ class _StudentDashboardState extends State<StudentDashboard>
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Jaga selalu kebersihan kelasmu yaa',
+                          'Jaga selalu kebersihan kelasmu ya!',
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.8),
                             fontSize: 14,
@@ -271,14 +245,11 @@ class _StudentDashboardState extends State<StudentDashboard>
                         child: _buildQuickActionCard(
                           icon: Icons.bar_chart_rounded,
                           title: 'Peringkat',
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const CleanRankScreen(),
-                              ),
-                            );
-                          },
+                          subtitle: 'Kelas & Global',
+                          onTap: () => Navigator.push(
+                            context,
+                            _slideRoute(const CleanRankScreen()),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -287,20 +258,15 @@ class _StudentDashboardState extends State<StudentDashboard>
                           icon: Icons.calendar_today_rounded,
                           title: 'Jadwal Piket',
                           subtitle: todayLabel,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    ChangeNotifierProvider<
-                                      DashboardViewModel
-                                    >.value(
-                                      value: dashVm,
-                                      child: const PiketScheduleScreen(),
-                                    ),
+                          onTap: () => Navigator.push(
+                            context,
+                            _slideRoute(
+                              ChangeNotifierProvider<DashboardViewModel>.value(
+                                value: dashVm,
+                                child: const PiketScheduleScreen(),
                               ),
-                            );
-                          },
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -309,14 +275,10 @@ class _StudentDashboardState extends State<StudentDashboard>
                           icon: Icons.history_rounded,
                           title: 'Riwayat',
                           subtitle: 'Laporan Piket',
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const CleanTrackScreen(),
-                              ),
-                            );
-                          },
+                          onTap: () => Navigator.push(
+                            context,
+                            _slideRoute(const CleanTrackScreen()),
+                          ),
                         ),
                       ),
                     ],
@@ -327,23 +289,32 @@ class _StudentDashboardState extends State<StudentDashboard>
                   child: Column(
                     children: [
                       _buildFeatureCardWithImage(
-                        title: 'Kirimkan Foto Kelas Anda',
-                        subtitle:
-                            'Setor pengerjaan piket anda dan dapatkan penilaian!',
+                        title: 'Kirim Foto Kelas Anda',
+                        subtitle: 'Setor pengerjaan piket anda dan dapatkan penilaian!',
                         buttonText: 'Klik disini',
                         imagePath: 'assets/images/dummy.png',
-                        onTap: () => _setPage(2),
+                        onTap: () => Navigator.push(
+                          context,
+                          _slideRoute(
+                            CameraUploadScreen(
+                              asRoute: true,
+                              onViewHistory: () => Navigator.of(context).pop(),
+                            ),
+                          ),
+                        ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 20),
                       _buildGeofenceCard(statusVm),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 20),
                       _buildFeatureCardWithImage(
                         title: 'PRABA AI',
-                        subtitle:
-                            'Tanya seputar lingkungan pada PRABA sekarang!',
+                        subtitle: 'Tanya seputar lingkungan pada PRABA sekarang!',
                         buttonText: 'Coba sekarang!',
-                        imagePath: 'assets/images/dummy.png',
-                        onTap: () => _setPage(1),
+                        imagePath: 'assets/images/maskot.png',
+                        onTap: () => Navigator.push(
+                          context,
+                          _slideRoute(const PrabaAiScreen(asRoute: true)),
+                        ),
                       ),
                       const SizedBox(height: 120),
                     ],
@@ -366,43 +337,63 @@ class _StudentDashboardState extends State<StudentDashboard>
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 130,
-        padding: const EdgeInsets.all(12),
+        height: 150, // Increased height as requested
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
         decoration: BoxDecoration(
-          color: AppColors.emeraldMid,
-          borderRadius: BorderRadius.circular(16),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF1A6B4F), Color(0xFF0D4230)],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.2),
+            width: 1.5,
+          ),
           boxShadow: [
             BoxShadow(
-              color: AppColors.emeraldDark.withValues(alpha: 0.2),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
+              color: AppColors.emeraldDark.withValues(alpha: 0.4),
+              blurRadius: 12,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: Colors.white, size: 28),
-            const SizedBox(height: 8),
-            if (subtitle != null) ...[
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+            // Icon with simple circular background (matching reference)
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.15),
               ),
-              const SizedBox(height: 2),
-            ],
+              child: Icon(
+                icon,
+                color: Colors.white,
+                size: 28,
+              ),
+            ),
+            const SizedBox(height: 14),
             Text(
               title,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.8),
+                color: Colors.white.withValues(alpha: 0.9),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              subtitle ?? '',
+              style: TextStyle(
+                color: subtitle == null ? Colors.transparent : Colors.white70,
                 fontSize: 11,
+                fontWeight: FontWeight.w400,
+                letterSpacing: 0.2,
               ),
               textAlign: TextAlign.center,
               maxLines: 1,
@@ -493,21 +484,12 @@ class _StudentDashboardState extends State<StudentDashboard>
             borderRadius: BorderRadius.circular(16),
             child: Image.asset(
               imagePath,
-              width: 80,
-              height: 80,
+              width: 120,
+              height: 120,
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE8F5E9),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Icon(
-                  Icons.image_not_supported_outlined,
-                  color: AppColors.primaryGreen,
-                  size: 32,
-                ),
+              errorBuilder: (context, error, stackTrace) => const SizedBox(
+                width: 120,
+                height: 120,
               ),
             ),
           ),
@@ -659,8 +641,8 @@ class _StudentDashboardState extends State<StudentDashboard>
                 _buildNotchNavItem(
                   icon: Icons.person_rounded,
                   label: 'Profil',
-                  isActive: _currentIndex == 4,
-                  onTap: () => _setPage(4),
+                  isActive: _currentIndex == 2,
+                  onTap: () => _setPage(2),
                 ),
               ],
             ),
@@ -680,7 +662,7 @@ class _StudentDashboardState extends State<StudentDashboard>
                     child: Transform.scale(
                       scale: _cameraScale.value,
                       child: GestureDetector(
-                        onTap: () => _setPage(2),
+                        onTap: () => _setPage(1),
                         child: Container(
                           width: 66,
                           height: 66,
