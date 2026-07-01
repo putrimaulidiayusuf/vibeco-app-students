@@ -11,10 +11,12 @@ import '../../viewmodels/student/smart_check_viewmodel.dart';
 class CameraUploadScreen extends StatefulWidget {
   final VoidCallback onViewHistory;
   final ValueChanged<bool>? onShowCameraChanged;
+  final bool asRoute;
   const CameraUploadScreen({
     super.key,
     required this.onViewHistory,
     this.onShowCameraChanged,
+    this.asRoute = false,
   });
 
   @override
@@ -36,14 +38,15 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
     });
   }
 
-  Future<void> _pickImage(CameraUploadViewModel vm, String slot, ImageSource source) async {
+  Future<void> _pickImage(
+    CameraUploadViewModel vm,
+    String slot,
+    ImageSource source,
+  ) async {
     final error = await vm.pickPhoto(slot, source);
     if (error != null && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error),
-          backgroundColor: AppTheme.warning,
-        ),
+        SnackBar(content: Text(error), backgroundColor: AppTheme.warning),
       );
     }
   }
@@ -54,7 +57,9 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Foto piket berhasil dikirim! Hasil analisis AI siap.'),
+            content: Text(
+              'Foto piket berhasil dikirim! Hasil analisis AI siap.',
+            ),
             backgroundColor: AppTheme.success,
           ),
         );
@@ -84,7 +89,9 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
         side: BorderSide(
-          color: file != null ? AppTheme.success.withValues(alpha: 0.5) : Colors.grey.shade200,
+          color: file != null
+              ? AppTheme.success.withValues(alpha: 0.5)
+              : Colors.grey.shade200,
           width: 1.5,
         ),
       ),
@@ -96,7 +103,9 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
             Row(
               children: [
                 Icon(
-                  file != null ? Icons.check_circle_rounded : Icons.add_a_photo_rounded,
+                  file != null
+                      ? Icons.check_circle_rounded
+                      : Icons.add_a_photo_rounded,
                   color: file != null ? AppTheme.success : AppColors.emeraldMid,
                 ),
                 const SizedBox(width: 8),
@@ -106,18 +115,27 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
                     children: [
                       Text(
                         title,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
                       ),
                       Text(
                         subtitle,
-                        style: const TextStyle(fontSize: 12, color: Colors.grey),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
                       ),
                     ],
                   ),
                 ),
                 if (file != null)
                   IconButton(
-                    icon: const Icon(Icons.delete_outline_rounded, color: AppTheme.error),
+                    icon: const Icon(
+                      Icons.delete_outline_rounded,
+                      color: AppTheme.error,
+                    ),
                     onPressed: () => vm.removePhoto(slotKey),
                   ),
               ],
@@ -138,15 +156,22 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
                 decoration: BoxDecoration(
                   color: Colors.grey.shade50,
                   borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
-                  border: Border.all(color: Colors.grey.shade200, style: BorderStyle.values[0]),
+                  border: Border.all(
+                    color: Colors.grey.shade200,
+                    style: BorderStyle.values[0],
+                  ),
                 ),
                 child: Center(
                   child: ElevatedButton.icon(
-                    onPressed: () => _pickImage(vm, slotKey, ImageSource.camera),
+                    onPressed: () =>
+                        _pickImage(vm, slotKey, ImageSource.camera),
                     icon: const Icon(Icons.camera_alt_rounded, size: 18),
                     label: const Text('Kamera'),
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
                       backgroundColor: AppColors.emeraldMid,
                       foregroundColor: Colors.white,
                     ),
@@ -184,11 +209,10 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
       ],
       child: Consumer2<CameraUploadViewModel, SmartCheckViewModel>(
         builder: (context, uploadVm, statusVm, child) {
-          if (statusVm.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          final showCamera = uploadVm.showCamera && statusVm.canUpload && uploadVm.aiScore == null;
+          final showCamera =
+              uploadVm.showCamera &&
+              statusVm.canUpload &&
+              uploadVm.aiScore == null;
           if (showCamera != _lastShowCamera) {
             _lastShowCamera = showCamera;
             WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -199,28 +223,40 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
           }
 
           String headerTitle = 'Unggah Foto Piket Kelas';
-          String headerSubtitle = 'Wajib mengunggah semua 3 foto dengan sudut pandang berbeda untuk dianalisis oleh AI.';
+          String headerSubtitle =
+              'Wajib mengunggah semua 3 foto dengan sudut pandang berbeda untuk dianalisis oleh AI.';
           VoidCallback? onBack = widget.onViewHistory;
 
-          if (uploadVm.aiScore != null) {
+          if (statusVm.isLoading) {
+            headerTitle = 'Memuat...';
+            headerSubtitle = 'Mohon tunggu sebentar.';
+          } else if (uploadVm.aiScore != null) {
             headerTitle = 'Hasil Analisis AI';
-            headerSubtitle = 'Berikut adalah hasil penilaian kebersihan kelas Anda hari ini.';
+            headerSubtitle =
+                'Berikut adalah hasil penilaian kebersihan kelas Anda hari ini.';
           } else if (!statusVm.canUpload) {
             headerTitle = 'Status Piket';
             headerSubtitle = 'Cek kelayakan untuk melakukan piket hari ini.';
           } else if (!uploadVm.showCamera) {
             headerTitle = 'Daftar Kehadiran Regu Piket';
-            headerSubtitle = 'Isi status kehadiran setiap anggota regu piket hari ini sebelum mengambil foto.';
+            headerSubtitle =
+                'Isi status kehadiran setiap anggota regu piket hari ini sebelum mengambil foto.';
           }
 
-          if (!uploadVm.showCamera && statusVm.canUpload && uploadVm.aiScore == null) {
-             onBack = widget.onViewHistory;
-          } else if (uploadVm.showCamera && statusVm.canUpload && uploadVm.aiScore == null) {
-             onBack = () => uploadVm.reset();
+          if (!uploadVm.showCamera &&
+              statusVm.canUpload &&
+              uploadVm.aiScore == null) {
+            onBack = widget.onViewHistory;
+          } else if (uploadVm.showCamera &&
+              statusVm.canUpload &&
+              uploadVm.aiScore == null) {
+            onBack = () => uploadVm.reset();
           }
 
           Widget bodyWidget;
-          if (uploadVm.aiScore != null) {
+          if (statusVm.isLoading) {
+            bodyWidget = const Center(child: CircularProgressIndicator());
+          } else if (uploadVm.aiScore != null) {
             bodyWidget = SingleChildScrollView(
               padding: const EdgeInsets.all(24.0),
               child: Column(
@@ -233,7 +269,11 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
                   const SizedBox(height: 12),
                   const Text(
                     'Analisis AI Selesai!',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.primaryDark),
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.primaryDark,
+                    ),
                   ),
                   const SizedBox(height: 20),
 
@@ -245,7 +285,11 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
                       color: Colors.white,
                       shape: BoxShape.circle,
                       boxShadow: [
-                        BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 6,
+                          offset: Offset(0, 3),
+                        ),
                       ],
                     ),
                     child: Center(
@@ -254,7 +298,9 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
                         style: TextStyle(
                           fontSize: 36,
                           fontWeight: FontWeight.w800,
-                          color: uploadVm.aiScore! >= 75 ? AppTheme.success : AppTheme.warning,
+                          color: uploadVm.aiScore! >= 75
+                              ? AppTheme.success
+                              : AppTheme.warning,
                         ),
                       ),
                     ),
@@ -271,7 +317,10 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
                     alignment: Alignment.centerLeft,
                     child: Text(
                       'Temuan Kebersihan (AI Findings):',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -280,7 +329,10 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
                           alignment: Alignment.centerLeft,
                           child: Text(
                             '✓ Kelas sangat bersih! Tidak ada masalah ditemukan.',
-                            style: TextStyle(color: AppTheme.success, fontStyle: FontStyle.italic),
+                            style: TextStyle(
+                              color: AppTheme.success,
+                              fontStyle: FontStyle.italic,
+                            ),
                           ),
                         )
                       : ListView.builder(
@@ -289,11 +341,17 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
                           itemCount: uploadVm.findings.length,
                           itemBuilder: (context, index) {
                             return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4.0),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 4.0,
+                              ),
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 18),
+                                  const Icon(
+                                    Icons.warning_amber_rounded,
+                                    color: Colors.orange,
+                                    size: 18,
+                                  ),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
@@ -350,7 +408,7 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
                             color: Colors.black.withValues(alpha: 0.04),
                             blurRadius: 16,
                             offset: const Offset(0, 8),
-                          )
+                          ),
                         ],
                       ),
                       child: Column(
@@ -360,23 +418,33 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
                               color: isAlreadySubmitted
-                                  ? AppColors.primaryGreen.withValues(alpha: 0.1)
+                                  ? AppColors.primaryGreen.withValues(
+                                      alpha: 0.1,
+                                    )
                                   : Colors.red.shade50,
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
-                              isAlreadySubmitted ? Icons.check_circle_rounded : Icons.lock_rounded,
-                              color: isAlreadySubmitted ? AppColors.primaryGreen : AppColors.error,
+                              isAlreadySubmitted
+                                  ? Icons.check_circle_rounded
+                                  : Icons.lock_rounded,
+                              color: isAlreadySubmitted
+                                  ? AppColors.primaryGreen
+                                  : AppColors.error,
                               size: 48,
                             ),
                           ),
                           const SizedBox(height: 18),
                           Text(
-                            isAlreadySubmitted ? 'Piket Hari Ini Selesai' : 'Pengiriman Terkunci',
+                            isAlreadySubmitted
+                                ? 'Piket Hari Ini Selesai'
+                                : 'Pengiriman Terkunci',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: isAlreadySubmitted ? AppColors.emeraldDark : AppColors.error,
+                              color: isAlreadySubmitted
+                                  ? AppColors.emeraldDark
+                                  : AppColors.error,
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -393,22 +461,37 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
                           ),
                           if (!isAlreadySubmitted) ...[
                             const SizedBox(height: 20),
-                            _buildStatusIndicator('Lokasi berada di Sekolah', statusVm.isInsideGeofence),
-                            _buildStatusIndicator('Waktu piket sesuai jadwal', statusVm.isWithinTimeWindow),
-                            _buildStatusIndicator('Hari sekolah (Senin - Sabtu)', !statusVm.isHoliday),
-                            _buildStatusIndicator('Jadwal piket Anda hari ini', statusVm.isOnDutyToday),
+                            _buildStatusIndicator(
+                              'Lokasi berada di Sekolah',
+                              statusVm.isInsideGeofence,
+                            ),
+                            _buildStatusIndicator(
+                              'Waktu piket sesuai jadwal',
+                              statusVm.isWithinTimeWindow,
+                            ),
+                            _buildStatusIndicator(
+                              'Hari sekolah (Senin - Jumat)',
+                              !statusVm.isHoliday,
+                            ),
+                            _buildStatusIndicator(
+                              'Jadwal piket Anda hari ini',
+                              statusVm.isOnDutyToday,
+                            ),
                           ],
                           const SizedBox(height: 24),
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton.icon(
-                              onPressed: () => statusVm.loadStatusAndConfig(token),
+                              onPressed: () =>
+                                  statusVm.loadStatusAndConfig(token),
                               icon: const Icon(Icons.refresh_rounded, size: 18),
                               label: const Text('Refresh Status'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.emeraldMid,
                                 foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14),
                                 ),
@@ -449,7 +532,11 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
                             children: [
                               Text(
                                 att.name,
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.primaryDark),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: AppTheme.primaryDark,
+                                ),
                               ),
                               const SizedBox(height: 12),
                               Row(
@@ -458,21 +545,30 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
                                     label: 'Piket',
                                     isSelected: att.status == 'piket',
                                     color: AppTheme.success,
-                                    onTap: () => uploadVm.updateStudentStatus(att.studentId, 'piket'),
+                                    onTap: () => uploadVm.updateStudentStatus(
+                                      att.studentId,
+                                      'piket',
+                                    ),
                                   ),
                                   const SizedBox(width: 8),
                                   _buildStatusOption(
                                     label: 'Kabur',
                                     isSelected: att.status == 'kabur',
                                     color: AppTheme.warning,
-                                    onTap: () => uploadVm.updateStudentStatus(att.studentId, 'kabur'),
+                                    onTap: () => uploadVm.updateStudentStatus(
+                                      att.studentId,
+                                      'kabur',
+                                    ),
                                   ),
                                   const SizedBox(width: 8),
                                   _buildStatusOption(
                                     label: 'Absen',
                                     isSelected: att.status == 'tidak sekolah',
                                     color: AppTheme.error,
-                                    onTap: () => uploadVm.updateStudentStatus(att.studentId, 'tidak sekolah'),
+                                    onTap: () => uploadVm.updateStudentStatus(
+                                      att.studentId,
+                                      'tidak sekolah',
+                                    ),
                                   ),
                                 ],
                               ),
@@ -480,12 +576,14 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
                                 const SizedBox(height: 12),
                                 TextField(
                                   decoration: InputDecoration(
-                                    labelText: 'Alasan ${att.status == 'kabur' ? "Kabur" : "Absen"} (Opsional)',
+                                    labelText:
+                                        'Alasan ${att.status == 'kabur' ? "Kabur" : "Absen"} (Opsional)',
                                     border: const OutlineInputBorder(),
                                     isDense: true,
                                     labelStyle: const TextStyle(fontSize: 13),
                                   ),
-                                  onChanged: (val) => uploadVm.updateStudentReason(att.studentId, val),
+                                  onChanged: (val) => uploadVm
+                                      .updateStudentReason(att.studentId, val),
                                 ),
                               ],
                             ],
@@ -517,21 +615,24 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
                     // The 3 Photo Slots
                     _buildPhotoSlot(
                       title: 'Tampak Depan Kelas',
-                      subtitle: 'Ambil foto dari arah pintu masuk menghadap papan tulis',
+                      subtitle:
+                          'Ambil foto dari arah pintu masuk menghadap papan tulis',
                       file: uploadVm.frontPhoto,
                       slotKey: 'front',
                       vm: uploadVm,
                     ),
                     _buildPhotoSlot(
                       title: 'Tampak Belakang Kelas',
-                      subtitle: 'Ambil foto dari depan kelas menghadap ke arah belakang',
+                      subtitle:
+                          'Ambil foto dari depan kelas menghadap ke arah belakang',
                       file: uploadVm.backPhoto,
                       slotKey: 'back',
                       vm: uploadVm,
                     ),
                     _buildPhotoSlot(
                       title: 'Foto Tambahan',
-                      subtitle: 'Ambil foto alat kebersihan atau kebersihan lantai kelas',
+                      subtitle:
+                          'Ambil foto alat kebersihan atau kebersihan lantai kelas',
                       file: uploadVm.extraPhoto,
                       slotKey: 'extra',
                       vm: uploadVm,
@@ -543,12 +644,17 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: Colors.red.shade50,
-                          borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                          borderRadius: BorderRadius.circular(
+                            AppTheme.radiusMedium,
+                          ),
                           border: Border.all(color: Colors.red.shade200),
                         ),
                         child: Text(
                           uploadVm.errorMessage!,
-                          style: const TextStyle(color: AppTheme.error, fontSize: 13),
+                          style: const TextStyle(
+                            color: AppTheme.error,
+                            fontSize: 13,
+                          ),
                           textAlign: TextAlign.center,
                         ),
                       ),
@@ -560,7 +666,9 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
                         ? const Center(child: CircularProgressIndicator())
                         : _buildGradientButton(
                             text: 'KIRIM LAPORAN PIKET',
-                            onPressed: uploadVm.isReadyToSubmit ? () => _handleSubmit(uploadVm, token) : null,
+                            onPressed: uploadVm.isReadyToSubmit
+                                ? () => _handleSubmit(uploadVm, token)
+                                : null,
                           ),
                     const SizedBox(height: 120),
                   ],
@@ -569,64 +677,85 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
             );
           }
 
-          return Column(
-            children: [
-              // FIXED EMERALD GRADIENT HEADER
-              Container(
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  gradient: AppColors.emeraldGradient,
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(30),
-                    bottomRight: Radius.circular(30),
+          return Scaffold(
+            backgroundColor: const Color(0xFFF8FAF8),
+            body: Column(
+              children: [
+                // FIXED EMERALD GRADIENT HEADER
+                Container(
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    gradient: AppColors.emeraldGradient,
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(30),
+                      bottomRight: Radius.circular(30),
+                    ),
                   ),
-                ),
-                child: SafeArea(
-                  bottom: false,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Row(
-                          children: [
-                            if (showCamera)
-                              IconButton(
-                                icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
-                                onPressed: onBack,
-                              )
-                            else
-                              const SizedBox(width: 48, height: 48),
-                            Expanded(
-                              child: Text(
-                                headerTitle,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
+                  child: SafeArea(
+                    bottom: false,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            children: [
+                              if (showCamera || widget.asRoute)
+                                Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(14),
+                                    onTap: onBack,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(alpha: 0.12),
+                                        borderRadius: BorderRadius.circular(14),
+                                        border: Border.all(
+                                          color: Colors.white.withValues(alpha: 0.2),
+                                        ),
+                                      ),
+                                      child: const Icon(
+                                        Icons.arrow_back_ios_new_rounded,
+                                        color: Colors.white,
+                                        size: 18,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              else
+                                const SizedBox(width: 48, height: 48),
+                              Expanded(
+                                child: Text(
+                                  headerTitle,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
                                 ),
-                                textAlign: TextAlign.center,
                               ),
-                            ),
-                            const SizedBox(width: 48, height: 48), // spacer
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          headerSubtitle,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.9),
-                            fontSize: 13,
+                              const SizedBox(width: 48, height: 48), // spacer
+                            ],
                           ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+                          const SizedBox(height: 8),
+                          Text(
+                            headerSubtitle,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.9),
+                              fontSize: 13,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-              Expanded(child: bodyWidget),
-            ],
+                Expanded(child: bodyWidget),
+              ],
+            ),
           );
         },
       ),
@@ -680,7 +809,9 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
-            color: isSelected ? color.withValues(alpha: 0.15) : Colors.transparent,
+            color: isSelected
+                ? color.withValues(alpha: 0.15)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
             border: Border.all(
               color: isSelected ? color : Colors.grey.shade300,
@@ -702,7 +833,10 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
     );
   }
 
-  Widget _buildGradientButton({required String text, required VoidCallback? onPressed}) {
+  Widget _buildGradientButton({
+    required String text,
+    required VoidCallback? onPressed,
+  }) {
     final isEnabled = onPressed != null;
     return Container(
       width: double.infinity,
@@ -716,7 +850,7 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
                   color: AppColors.emeraldDark.withValues(alpha: 0.3),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
-                )
+                ),
               ]
             : null,
       ),

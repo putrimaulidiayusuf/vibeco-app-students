@@ -31,8 +31,6 @@ class DashboardViewModel extends ChangeNotifier {
     'Wednesday',
     'Thursday',
     'Friday',
-    'Saturday',
-    'Sunday',
   ];
 
   /// Load both my-team schedule and today's duty.

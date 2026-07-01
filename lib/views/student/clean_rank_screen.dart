@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/models/ranking_model.dart';
@@ -12,7 +13,8 @@ class CleanRankScreen extends StatefulWidget {
   State<CleanRankScreen> createState() => _CleanRankScreenState();
 }
 
-class _CleanRankScreenState extends State<CleanRankScreen> with TickerProviderStateMixin {
+class _CleanRankScreenState extends State<CleanRankScreen>
+    with TickerProviderStateMixin {
   late TabController _mainTabController;
   late TabController _classPeriodTabController;
 
@@ -38,125 +40,6 @@ class _CleanRankScreenState extends State<CleanRankScreen> with TickerProviderSt
   }
 
   // ─── PODIUM COMPONENT (TOP 3 CLASSES) ───
-  Widget _buildPodiumItem({
-    required ClassRanking ranking,
-    required double height,
-    required LinearGradient pedestalGradient,
-    required String medalText,
-    required bool isCurrentUserClass,
-    required int position,
-  }) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: Duration(milliseconds: 400 + (position * 150)),
-      curve: Curves.easeOutBack,
-      builder: (context, value, child) {
-        return Transform.scale(
-          scale: value,
-          child: child,
-        );
-      },
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          // Medal Badge floating
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.08),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                )
-              ],
-            ),
-            child: Text(
-              medalText,
-              style: const TextStyle(fontSize: 22),
-            ),
-          ),
-          const SizedBox(height: 6),
-          // Class Name
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: isCurrentUserClass ? AppColors.primaryGreen : Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isCurrentUserClass ? Colors.white : Colors.grey.shade200,
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                )
-              ],
-            ),
-            child: Text(
-              ranking.className,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: position == 1 ? 14 : 12,
-                color: isCurrentUserClass ? Colors.white : AppColors.emeraldDark,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          const SizedBox(height: 4),
-          // Score
-          Text(
-            '${ranking.score.toStringAsFixed(0)} pts',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: isCurrentUserClass ? AppColors.primaryGreen : Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 8),
-          // Pedestal
-          Container(
-            width: 85,
-            height: height,
-            decoration: BoxDecoration(
-              gradient: pedestalGradient,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: pedestalGradient.colors.first.withValues(alpha: 0.25),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                )
-              ],
-              border: isCurrentUserClass
-                  ? Border.all(color: Colors.white, width: 2)
-                  : null,
-            ),
-            child: Center(
-              child: Text(
-                '#$position',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildPodium(List<ClassRanking> rankings, String? currentUserClass) {
     if (rankings.isEmpty) return const SizedBox.shrink();
 
@@ -165,18 +48,20 @@ class _CleanRankScreenState extends State<CleanRankScreen> with TickerProviderSt
     final third = rankings.length > 2 ? rankings[2] : null;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
+            color: AppColors.emeraldDark.withValues(alpha: 0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
         ],
-        border: Border.all(color: Colors.grey.shade100),
+        border: Border.all(
+          color: AppColors.primaryGreen.withValues(alpha: 0.08),
+        ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -184,48 +69,75 @@ class _CleanRankScreenState extends State<CleanRankScreen> with TickerProviderSt
         children: [
           // 2nd Place
           if (second != null)
-            _buildPodiumItem(
-              ranking: second,
-              height: 90,
+            AnimatedPodiumItem(
+              key: ValueKey('class_${second.className}_2'),
+              title: second.className,
+              score: second.score,
+              scoreText: '${second.score.toStringAsFixed(0)} pts',
+              position: 2,
+              isCurrentUser: currentUserClass == second.className,
+              icon: Icons.eco_rounded,
+              iconColor: AppColors.emeraldMid.withValues(alpha: 0.7),
+              height: 100,
               pedestalGradient: const LinearGradient(
-                colors: [Color(0xFFB0BEC5), Color(0xFF78909C)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFFE8ECEF),
+                  Color(0xFFB0BEC5),
+                  Color(0xFF607D8B),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
               medalText: '🥈',
-              isCurrentUserClass: currentUserClass == second.className,
-              position: 2,
             )
           else
             const SizedBox(width: 85),
 
           // 1st Place
-          _buildPodiumItem(
-            ranking: first,
-            height: 125,
+          AnimatedPodiumItem(
+            key: ValueKey('class_${first.className}_1'),
+            title: first.className,
+            score: first.score,
+            scoreText: '${first.score.toStringAsFixed(0)} pts',
+            position: 1,
+            isCurrentUser: currentUserClass == first.className,
+            icon: Icons.eco_rounded,
+            iconColor: AppColors.primaryGreen,
+            height: 140,
             pedestalGradient: const LinearGradient(
-              colors: [Color(0xFFFFD54F), Color(0xFFFFB300)],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
+              colors: [
+                Color(0xFFFFDF00),
+                Color(0xFFD4AF37),
+                Color(0xFF996515),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
             medalText: '👑',
-            isCurrentUserClass: currentUserClass == first.className,
-            position: 1,
           ),
 
           // 3rd Place
           if (third != null)
-            _buildPodiumItem(
-              ranking: third,
-              height: 70,
+            AnimatedPodiumItem(
+              key: ValueKey('class_${third.className}_3'),
+              title: third.className,
+              score: third.score,
+              scoreText: '${third.score.toStringAsFixed(0)} pts',
+              position: 3,
+              isCurrentUser: currentUserClass == third.className,
+              icon: Icons.eco_rounded,
+              iconColor: AppColors.emeraldMid.withValues(alpha: 0.7),
+              height: 80,
               pedestalGradient: const LinearGradient(
-                colors: [Color(0xFFFF8A65), Color(0xFFD84315)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFFFFCC80),
+                  Color(0xFFCA6F1E),
+                  Color(0xFF7E5109),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
               medalText: '🥉',
-              isCurrentUserClass: currentUserClass == third.className,
-              position: 3,
             )
           else
             const SizedBox(width: 85),
@@ -235,7 +147,11 @@ class _CleanRankScreenState extends State<CleanRankScreen> with TickerProviderSt
   }
 
   // ─── CLASS RANKINGS TAB LIST ───
-  Widget _buildClassRankingList(CleanRankViewModel viewModel, List<ClassRanking> rankings, String? currentUserClass) {
+  Widget _buildClassRankingList(
+    CleanRankViewModel viewModel,
+    List<ClassRanking> rankings,
+    String? currentUserClass,
+  ) {
     if (viewModel.isLoading && rankings.isEmpty) {
       return const Center(
         child: CircularProgressIndicator(color: AppColors.primaryGreen),
@@ -251,11 +167,18 @@ class _CleanRankScreenState extends State<CleanRankScreen> with TickerProviderSt
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.leaderboard_rounded, size: 64, color: Colors.grey[300]),
+                Icon(
+                  Icons.leaderboard_rounded,
+                  size: 64,
+                  color: Colors.grey[300],
+                ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'Belum ada peringkat untuk periode ini',
-                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54),
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black54,
+                  ),
                 ),
               ],
             ),
@@ -265,28 +188,31 @@ class _CleanRankScreenState extends State<CleanRankScreen> with TickerProviderSt
     }
 
     // Remaining rankings starting from index 3
-    final listItems = rankings.length > 3 ? rankings.sublist(3) : <ClassRanking>[];
+    final listItems = rankings.length > 3
+        ? rankings.sublist(3)
+        : <ClassRanking>[];
 
     return RefreshIndicator(
       onRefresh: () => _refreshAll(viewModel),
       color: AppColors.primaryGreen,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
         children: [
           // Podium for top 3
           _buildPodium(rankings, currentUserClass),
           const SizedBox(height: 24),
 
           if (listItems.isNotEmpty) ...[
-            const Padding(
-              padding: EdgeInsets.only(left: 4, bottom: 12),
+            Padding(
+              padding: const EdgeInsets.only(left: 4, bottom: 12),
               child: Text(
                 'Peringkat Kelas Lainnya',
-                style: TextStyle(
+                style: GoogleFonts.plusJakartaSans(
                   fontWeight: FontWeight.bold,
-                  fontSize: 15,
+                  fontSize: 14,
                   color: AppColors.emeraldDark,
+                  letterSpacing: 0.2,
                 ),
               ),
             ),
@@ -298,79 +224,113 @@ class _CleanRankScreenState extends State<CleanRankScreen> with TickerProviderSt
                 final rank = listItems[index];
                 final isCurrentUserClass = currentUserClass == rank.className;
 
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  decoration: BoxDecoration(
-                    color: isCurrentUserClass ? const Color(0xFFE8F5E9) : Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isCurrentUserClass ? AppColors.primaryGreen : Colors.grey.shade100,
-                      width: isCurrentUserClass ? 1.5 : 1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.02),
-                        blurRadius: 6,
-                        offset: const Offset(0, 3),
-                      )
-                    ],
-                  ),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    leading: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
+                return AnimatedRankingRow(
+                  index: index,
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    decoration: BoxDecoration(
+                      color: isCurrentUserClass
+                          ? AppColors.primaryGreen.withValues(alpha: 0.05)
+                          : Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
                         color: isCurrentUserClass
-                            ? AppColors.primaryGreen
-                            : const Color(0xFFF0F2F0),
-                        shape: BoxShape.circle,
+                            ? AppColors.primaryGreen.withValues(alpha: 0.3)
+                            : Colors.grey.shade100,
+                        width: isCurrentUserClass ? 1.5 : 1,
                       ),
-                      child: Center(
-                        child: Text(
-                          rank.rank.toString(),
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: isCurrentUserClass ? Colors.white : AppColors.emeraldDark,
-                          ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.emeraldDark.withValues(alpha: 0.02),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
                         ),
-                      ),
+                      ],
                     ),
-                    title: Row(
-                      children: [
-                        Text(
-                          rank.className,
-                          style: TextStyle(
-                            fontWeight: isCurrentUserClass ? FontWeight.bold : FontWeight.w600,
-                            color: AppColors.emeraldDark,
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 4,
+                      ),
+                      leading: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: isCurrentUserClass
+                              ? AppColors.primaryGreen
+                              : const Color(0xFFE8F0EA),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Center(
+                          child: Text(
+                            rank.rank.toString(),
+                            style: GoogleFonts.plusJakartaSans(
+                              fontWeight: FontWeight.bold,
+                              color: isCurrentUserClass
+                                  ? Colors.white
+                                  : AppColors.emeraldDark,
+                            ),
                           ),
                         ),
-                        if (isCurrentUserClass) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: AppColors.primaryGreen,
-                              borderRadius: BorderRadius.circular(10),
+                      ),
+                      title: Row(
+                        children: [
+                          Text(
+                            rank.className,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontWeight: isCurrentUserClass
+                                  ? FontWeight.bold
+                                  : FontWeight.w600,
+                              color: AppColors.emeraldDark,
                             ),
-                            child: const Text(
-                              'KELAS SAYA',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
+                          ),
+                          if (isCurrentUserClass) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
                               ),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryGreen.withValues(
+                                  alpha: 0.15,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                'Kelas Saya',
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: AppColors.primaryDark,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.eco_rounded,
+                            color: isCurrentUserClass
+                                ? AppColors.primaryGreen
+                                : AppColors.emeraldMid.withValues(alpha: 0.6),
+                            size: 16,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${rank.score.toStringAsFixed(0)} pts',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontWeight: FontWeight.w800,
+                              color: isCurrentUserClass
+                                  ? AppColors.primaryGreen
+                                  : AppColors.emeraldMid,
+                              fontSize: 14,
                             ),
                           ),
                         ],
-                      ],
-                    ),
-                    trailing: Text(
-                      '${rank.score.toStringAsFixed(0)} pts',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        color: isCurrentUserClass ? AppColors.primaryGreen : AppColors.emeraldMid,
-                        fontSize: 15,
                       ),
                     ),
                   ),
@@ -384,116 +344,6 @@ class _CleanRankScreenState extends State<CleanRankScreen> with TickerProviderSt
   }
 
   // ─── CLASS PICK PICKET DAY PODIUM (TOP 3 PIKET DAYS) ───
-  Widget _buildClassDayPodiumItem({
-    required PiketDayRanking ranking,
-    required double height,
-    required LinearGradient pedestalGradient,
-    required String medalText,
-    required int position,
-  }) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: Duration(milliseconds: 400 + (position * 150)),
-      curve: Curves.easeOutBack,
-      builder: (context, value, child) {
-        return Transform.scale(
-          scale: value,
-          child: child,
-        );
-      },
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          // Medal Badge floating
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.08),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                )
-              ],
-            ),
-            child: Text(
-              medalText,
-              style: const TextStyle(fontSize: 22),
-            ),
-          ),
-          const SizedBox(height: 6),
-          // Day name
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200, width: 1),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                )
-              ],
-            ),
-            child: Text(
-              ranking.dayNameId,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-                color: AppColors.emeraldDark,
-              ),
-            ),
-          ),
-          const SizedBox(height: 4),
-          // Score
-          Text(
-            '${ranking.averageScore.toStringAsFixed(1)} pts',
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: AppColors.primaryGreen,
-            ),
-          ),
-          const SizedBox(height: 8),
-          // Pedestal
-          Container(
-            width: 85,
-            height: height,
-            decoration: BoxDecoration(
-              gradient: pedestalGradient,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: pedestalGradient.colors.first.withValues(alpha: 0.25),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                )
-              ],
-            ),
-            child: Center(
-              child: Text(
-                '#$position',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildClassDayPodium(List<PiketDayRanking> rankings) {
     if (rankings.isEmpty) return const SizedBox.shrink();
 
@@ -502,18 +352,20 @@ class _CleanRankScreenState extends State<CleanRankScreen> with TickerProviderSt
     final third = rankings.length > 2 ? rankings[2] : null;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
+            color: AppColors.emeraldDark.withValues(alpha: 0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
         ],
-        border: Border.all(color: Colors.grey.shade100),
+        border: Border.all(
+          color: AppColors.primaryGreen.withValues(alpha: 0.08),
+        ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -521,45 +373,75 @@ class _CleanRankScreenState extends State<CleanRankScreen> with TickerProviderSt
         children: [
           // 2nd Place
           if (second != null)
-            _buildClassDayPodiumItem(
-              ranking: second,
-              height: 90,
+            AnimatedPodiumItem(
+              key: ValueKey('day_${second.dayNameId}_2'),
+              title: second.dayNameId,
+              score: second.averageScore,
+              scoreText: '${second.averageScore.toStringAsFixed(1)} pts',
+              position: 2,
+              isCurrentUser: false,
+              icon: Icons.star_rounded,
+              iconColor: AppColors.warning,
+              height: 100,
               pedestalGradient: const LinearGradient(
-                colors: [Color(0xFFB0BEC5), Color(0xFF78909C)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFFE8ECEF),
+                  Color(0xFFB0BEC5),
+                  Color(0xFF607D8B),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
               medalText: '🥈',
-              position: 2,
             )
           else
             const SizedBox(width: 85),
 
           // 1st Place
-          _buildClassDayPodiumItem(
-            ranking: first,
-            height: 125,
+          AnimatedPodiumItem(
+            key: ValueKey('day_${first.dayNameId}_1'),
+            title: first.dayNameId,
+            score: first.averageScore,
+            scoreText: '${first.averageScore.toStringAsFixed(1)} pts',
+            position: 1,
+            isCurrentUser: false,
+            icon: Icons.star_rounded,
+            iconColor: AppColors.warning,
+            height: 140,
             pedestalGradient: const LinearGradient(
-              colors: [Color(0xFFFFD54F), Color(0xFFFFB300)],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
+              colors: [
+                Color(0xFFFFDF00),
+                Color(0xFFD4AF37),
+                Color(0xFF996515),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
             medalText: '👑',
-            position: 1,
           ),
 
           // 3rd Place
           if (third != null)
-            _buildClassDayPodiumItem(
-              ranking: third,
-              height: 70,
+            AnimatedPodiumItem(
+              key: ValueKey('day_${third.dayNameId}_3'),
+              title: third.dayNameId,
+              score: third.averageScore,
+              scoreText: '${third.averageScore.toStringAsFixed(1)} pts',
+              position: 3,
+              isCurrentUser: false,
+              icon: Icons.star_rounded,
+              iconColor: AppColors.warning,
+              height: 80,
               pedestalGradient: const LinearGradient(
-                colors: [Color(0xFFFF8A65), Color(0xFFD84315)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFFFFCC80),
+                  Color(0xFFCA6F1E),
+                  Color(0xFF7E5109),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
               medalText: '🥉',
-              position: 3,
             )
           else
             const SizedBox(width: 85),
@@ -569,7 +451,10 @@ class _CleanRankScreenState extends State<CleanRankScreen> with TickerProviderSt
   }
 
   // ─── CLEANEST PIKET DAYS TAB LIST ───
-  Widget _buildClassRankingListBreakdown(CleanRankViewModel viewModel, List<PiketDayRanking> rankings) {
+  Widget _buildClassRankingListBreakdown(
+    CleanRankViewModel viewModel,
+    List<PiketDayRanking> rankings,
+  ) {
     if (viewModel.isLoading && rankings.isEmpty) {
       return const Center(
         child: CircularProgressIndicator(color: AppColors.primaryGreen),
@@ -585,11 +470,18 @@ class _CleanRankScreenState extends State<CleanRankScreen> with TickerProviderSt
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.cleaning_services_rounded, size: 64, color: Colors.grey[300]),
+                Icon(
+                  Icons.cleaning_services_rounded,
+                  size: 64,
+                  color: Colors.grey[300],
+                ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'Belum ada data piket terverifikasi',
-                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54),
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black54,
+                  ),
                 ),
               ],
             ),
@@ -598,27 +490,30 @@ class _CleanRankScreenState extends State<CleanRankScreen> with TickerProviderSt
       );
     }
 
-    final listItems = rankings.length > 3 ? rankings.sublist(3) : <PiketDayRanking>[];
+    final listItems = rankings.length > 3
+        ? rankings.sublist(3)
+        : <PiketDayRanking>[];
 
     return RefreshIndicator(
       onRefresh: () => _refreshAll(viewModel),
       color: AppColors.primaryGreen,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
         children: [
           _buildClassDayPodium(rankings),
           const SizedBox(height: 24),
 
           if (listItems.isNotEmpty) ...[
-            const Padding(
-              padding: EdgeInsets.only(left: 4, bottom: 12),
+            Padding(
+              padding: const EdgeInsets.only(left: 4, bottom: 12),
               child: Text(
                 'Hari Piket Lainnya',
-                style: TextStyle(
+                style: GoogleFonts.plusJakartaSans(
                   fontWeight: FontWeight.bold,
-                  fontSize: 15,
+                  fontSize: 14,
                   color: AppColors.emeraldDark,
+                  letterSpacing: 0.2,
                 ),
               ),
             ),
@@ -629,53 +524,76 @@ class _CleanRankScreenState extends State<CleanRankScreen> with TickerProviderSt
               itemBuilder: (context, index) {
                 final rank = listItems[index];
 
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.grey.shade100),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.02),
-                        blurRadius: 6,
-                        offset: const Offset(0, 3),
-                      )
-                    ],
-                  ),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    leading: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFF0F2F0),
-                        shape: BoxShape.circle,
+                return AnimatedRankingRow(
+                  index: index,
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.grey.shade100),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.emeraldDark.withValues(alpha: 0.02),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 4,
                       ),
-                      child: Center(
-                        child: Text(
-                          rank.rank.toString(),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.emeraldDark,
+                      leading: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE8F0EA),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Center(
+                          child: Text(
+                            rank.rank.toString(),
+                            style: GoogleFonts.plusJakartaSans(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.emeraldDark,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    title: Text(
-                      rank.dayNameId,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.emeraldDark,
+                      title: Text(
+                        rank.dayNameId,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.emeraldDark,
+                        ),
                       ),
-                    ),
-                    subtitle: Text('${rank.piketCount} piket diverifikasi'),
-                    trailing: Text(
-                      '${rank.averageScore.toStringAsFixed(1)} pts',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.primaryGreen,
-                        fontSize: 15,
+                      subtitle: Text(
+                        '${rank.piketCount} piket diverifikasi',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.star_rounded,
+                            color: AppColors.warning,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${rank.averageScore.toStringAsFixed(1)} pts',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.primaryGreen,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -689,7 +607,10 @@ class _CleanRankScreenState extends State<CleanRankScreen> with TickerProviderSt
   }
 
   // ─── CLASS LIST TAB PERIOD CONTAINER (DAILY, WEEKLY, MONTHLY) ───
-  Widget _buildClassRankingTabContainer(CleanRankViewModel viewModel, String? currentUserClass) {
+  Widget _buildClassRankingTabContainer(
+    CleanRankViewModel viewModel,
+    String? currentUserClass,
+  ) {
     return Column(
       children: [
         // Premium capsule Sub-TabBar (Daily, Weekly, Monthly)
@@ -698,27 +619,30 @@ class _CleanRankScreenState extends State<CleanRankScreen> with TickerProviderSt
           child: Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: const Color(0xFFF0F2F0),
+              color: AppColors.primaryGreen.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(14),
             ),
             child: TabBar(
               controller: _classPeriodTabController,
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.grey[600],
+              labelColor: AppColors.primaryGreen,
+              unselectedLabelColor: AppColors.emeraldMid.withValues(alpha: 0.6),
               indicatorSize: TabBarIndicatorSize.tab,
               indicator: BoxDecoration(
-                color: AppColors.primaryGreen,
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(11),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primaryGreen.withValues(alpha: 0.15),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
-                  )
+                  ),
                 ],
               ),
               dividerColor: Colors.transparent,
-              labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              labelStyle: GoogleFonts.plusJakartaSans(
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
               tabs: const [
                 Tab(text: 'Harian'),
                 Tab(text: 'Mingguan'),
@@ -731,9 +655,21 @@ class _CleanRankScreenState extends State<CleanRankScreen> with TickerProviderSt
           child: TabBarView(
             controller: _classPeriodTabController,
             children: [
-              _buildClassRankingList(viewModel, viewModel.dailyRankings, currentUserClass),
-              _buildClassRankingList(viewModel, viewModel.weeklyRankings, currentUserClass),
-              _buildClassRankingList(viewModel, viewModel.monthlyRankings, currentUserClass),
+              _buildClassRankingList(
+                viewModel,
+                viewModel.dailyRankings,
+                currentUserClass,
+              ),
+              _buildClassRankingList(
+                viewModel,
+                viewModel.weeklyRankings,
+                currentUserClass,
+              ),
+              _buildClassRankingList(
+                viewModel,
+                viewModel.monthlyRankings,
+                currentUserClass,
+              ),
             ],
           ),
         ),
@@ -760,70 +696,165 @@ class _CleanRankScreenState extends State<CleanRankScreen> with TickerProviderSt
             backgroundColor: const Color(0xFFF8FAF8),
             body: Column(
               children: [
-                // ─── PREMIUM GRADIENT HEADER WITH TABBAR ───
+                // ─── PREMIUM GRADIENT HEADER ───
                 Container(
                   width: double.infinity,
                   decoration: const BoxDecoration(
-                    gradient: AppColors.emeraldGradient,
-                    borderRadius: BorderRadius.only(
-                      bottomLeft: Radius.circular(30),
-                      bottomRight: Radius.circular(30),
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF0F4D3A), Color(0xFF06241B)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(32),
+                      bottomRight: Radius.circular(32),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Color(0xFF06241B),
+                        blurRadius: 20,
+                        offset: Offset(0, 8),
+                      ),
+                    ],
                   ),
                   child: SafeArea(
                     bottom: false,
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                      padding: const EdgeInsets.fromLTRB(20, 18, 20, 22),
                       child: Column(
                         children: [
-                          const Text(
-                            'Peringkat Kebersihan',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
+                          // Header row with back button + icon + title
+                          Row(
+                            children: [
+                              // Back Button
+                              Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(14),
+                                  onTap: () => Navigator.pop(context),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(
+                                        color: Colors.white.withValues(alpha: 0.2),
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.arrow_back_ios_new_rounded,
+                                      color: Colors.white,
+                                      size: 18,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              // Icon
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.12),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.leaderboard_rounded,
+                                  color: Colors.white,
+                                  size: 22,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              // Title & subtitle
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Peringkat Kebersihan',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                        letterSpacing: 0.3,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    const Text(
+                                      'Kompetisi kebersihan kelas & hari piket',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.white60,
+                                        letterSpacing: 0.2,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 4),
-                          const Text(
-                            'Kompetisi kebersihan kelas dan hari piket',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.white70,
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          // Main sliding TabBar
+                          const SizedBox(height: 22),
+                          // Premium sliding TabBar
                           Container(
                             padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(25),
+                              color: Colors.white.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(28),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.08),
+                                width: 1,
+                              ),
                             ),
                             child: TabBar(
                               controller: _mainTabController,
-                              labelColor: AppColors.emeraldDark,
+                              labelColor: const Color(0xFF06241B),
                               unselectedLabelColor: Colors.white,
                               indicatorSize: TabBarIndicatorSize.tab,
-                              indicator: BoxDecoration(
+                              indicator: const BoxDecoration(
                                 color: Colors.white,
-                                borderRadius: BorderRadius.circular(21),
+                                borderRadius: BorderRadius.all(Radius.circular(24)),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.05),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  )
+                                    color: Colors.black12,
+                                    blurRadius: 8,
+                                    offset: Offset(0, 3),
+                                  ),
                                 ],
                               ),
                               dividerColor: Colors.transparent,
                               labelStyle: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13,
+                                letterSpacing: 0.3,
+                              ),
+                              unselectedLabelStyle: const TextStyle(
+                                fontWeight: FontWeight.w500,
+                                fontSize: 13,
                               ),
                               tabs: const [
-                                Tab(text: 'Peringkat Kelas'),
-                                Tab(text: 'Hari Terbersih'),
+                                Tab(
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.emoji_events_rounded, size: 16),
+                                      SizedBox(width: 6),
+                                      Text('Peringkat Kelas'),
+                                    ],
+                                  ),
+                                ),
+                                Tab(
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.wb_sunny_rounded, size: 16),
+                                      SizedBox(width: 6),
+                                      Text('Hari Terbersih'),
+                                    ],
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -832,7 +863,7 @@ class _CleanRankScreenState extends State<CleanRankScreen> with TickerProviderSt
                     ),
                   ),
                 ),
-                // ─── MAIN TAB CONTENT ───
+                // ─── BODY ───
                 Expanded(
                   child: viewModel.error != null
                       ? Center(
@@ -841,12 +872,19 @@ class _CleanRankScreenState extends State<CleanRankScreen> with TickerProviderSt
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(Icons.error_outline_rounded, size: 48, color: AppColors.error),
+                                const Icon(
+                                  Icons.error_outline_rounded,
+                                  size: 48,
+                                  color: AppColors.error,
+                                ),
                                 const SizedBox(height: 12),
                                 Text(
                                   viewModel.error!,
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.w500),
+                                  style: const TextStyle(
+                                    color: AppColors.error,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
                                 const SizedBox(height: 16),
                                 ElevatedButton.icon(
@@ -861,8 +899,14 @@ class _CleanRankScreenState extends State<CleanRankScreen> with TickerProviderSt
                       : TabBarView(
                           controller: _mainTabController,
                           children: [
-                            _buildClassRankingTabContainer(viewModel, currentUserClass),
-                            _buildClassRankingListBreakdown(viewModel, viewModel.classRankings),
+                            _buildClassRankingTabContainer(
+                              viewModel,
+                              currentUserClass,
+                            ),
+                            _buildClassRankingListBreakdown(
+                              viewModel,
+                              viewModel.classRankings,
+                            ),
                           ],
                         ),
                 ),
@@ -870,6 +914,365 @@ class _CleanRankScreenState extends State<CleanRankScreen> with TickerProviderSt
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+// ─── STYLISH ANIMATED PODIUM ITEM (TOP 3 PIKET DAYS OR CLASSES) ───
+class AnimatedPodiumItem extends StatefulWidget {
+  final String title;
+  final double score;
+  final String scoreText;
+  final int position;
+  final bool isCurrentUser;
+  final IconData icon;
+  final Color iconColor;
+  final double height;
+  final LinearGradient pedestalGradient;
+  final String medalText;
+
+  const AnimatedPodiumItem({
+    super.key,
+    required this.title,
+    required this.score,
+    required this.scoreText,
+    required this.position,
+    required this.isCurrentUser,
+    required this.icon,
+    required this.iconColor,
+    required this.height,
+    required this.pedestalGradient,
+    required this.medalText,
+  });
+
+  @override
+  State<AnimatedPodiumItem> createState() => _AnimatedPodiumItemState();
+}
+
+class _AnimatedPodiumItemState extends State<AnimatedPodiumItem>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _heightAnimation;
+  late Animation<double> _opacityAnimation;
+  late Animation<double> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2200),
+    );
+
+    // Stagger heights and entry by position (Order: 1 -> 2 -> 3):
+    // Rank 1 starts at 0.0, ends height at 0.6
+    // Rank 2 starts at 0.2, ends height at 0.8
+    // Rank 3 starts at 0.4, ends height at 1.0
+    double start = 0.0;
+    if (widget.position == 2) {
+      start = 0.2;
+    } else if (widget.position == 3) {
+      start = 0.4;
+    }
+
+    _heightAnimation = Tween<double>(begin: 0.0, end: widget.height).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Interval(start, start + 0.6, curve: Curves.easeOutBack),
+      ),
+    );
+
+    _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Interval(start + 0.3, start + 0.6, curve: Curves.easeIn),
+      ),
+    );
+
+    _slideAnimation = Tween<double>(begin: 30.0, end: 0.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Interval(start + 0.2, start + 0.6, curve: Curves.easeOutCubic),
+      ),
+    );
+
+    _controller.forward();
+  }
+
+  @override
+  void didUpdateWidget(AnimatedPodiumItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.title != widget.title || oldWidget.score != widget.score) {
+      _controller.reset();
+      _controller.forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final currentHeight = _heightAnimation.value;
+        final currentOpacity = _opacityAnimation.value;
+        final currentSlide = _slideAnimation.value;
+
+        return Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            // Floating items above the pedestal
+            Opacity(
+              opacity: currentOpacity,
+              child: Transform.translate(
+                offset: Offset(0, currentSlide),
+                child: Column(
+                  children: [
+                    // Medal / Crown Circle Badge
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: widget.position == 1
+                              ? const Color(0xFFFFD43B)
+                              : (widget.position == 2
+                                  ? const Color(0xFFC0C0C0)
+                                  : const Color(0xFFCD7F32)),
+                          width: 2.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.emeraldDark.withValues(alpha: 0.12),
+                            blurRadius: 12,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        widget.medalText,
+                        style: TextStyle(
+                          fontSize: widget.position == 1 ? 26 : 22,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Title Card (Class / Day name)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      constraints: const BoxConstraints(maxWidth: 95),
+                      decoration: BoxDecoration(
+                        gradient: widget.isCurrentUser
+                            ? const LinearGradient(
+                                colors: [
+                                  AppColors.primaryGreen,
+                                  AppColors.primaryDark,
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              )
+                            : null,
+                        color: widget.isCurrentUser ? null : Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: widget.isCurrentUser
+                              ? Colors.white
+                              : AppColors.primaryGreen.withValues(alpha: 0.12),
+                          width: widget.isCurrentUser ? 1.5 : 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.emeraldDark.withValues(alpha: 0.06),
+                            blurRadius: 6,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        widget.title,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.bold,
+                          fontSize: widget.position == 1 ? 12 : 10.5,
+                          color: widget.isCurrentUser
+                              ? Colors.white
+                              : AppColors.emeraldDark,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+
+                    // Score
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          widget.icon,
+                          size: 12,
+                          color: widget.isCurrentUser
+                              ? AppColors.primaryGreen
+                              : widget.iconColor,
+                        ),
+                        const SizedBox(width: 2),
+                        Text(
+                          widget.scoreText,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: widget.isCurrentUser
+                                ? AppColors.primaryGreen
+                                : AppColors.emeraldDark.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                ),
+              ),
+            ),
+
+            // Pedestal Bar Chart/Graph
+            Container(
+              width: 85,
+              height: currentHeight,
+              decoration: BoxDecoration(
+                gradient: widget.pedestalGradient,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: widget.pedestalGradient.colors[1].withValues(alpha: 0.35),
+                    blurRadius: 14,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+                border: widget.isCurrentUser
+                    ? Border.all(color: Colors.white, width: 2.5)
+                    : Border.all(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        width: 0.7,
+                      ),
+              ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Subtle vertical glass shine reflection effect
+                  Positioned(
+                    left: 4,
+                    top: 4,
+                    bottom: 4,
+                    width: 3,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(1.5),
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '#${widget.position}',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: widget.position == 1 ? 26 : 22,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white.withValues(alpha: 0.95),
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          offset: const Offset(0, 2),
+                          blurRadius: 4,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+// ─── STAGGERED LIST ROW ENTRANCE ANIMATION ───
+class AnimatedRankingRow extends StatefulWidget {
+  final int index;
+  final Widget child;
+
+  const AnimatedRankingRow({
+    super.key,
+    required this.index,
+    required this.child,
+  });
+
+  @override
+  State<AnimatedRankingRow> createState() => _AnimatedRankingRowState();
+}
+
+class _AnimatedRankingRowState extends State<AnimatedRankingRow>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _opacity;
+  late Animation<Offset> _slide;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+
+    // Stagger based on index
+    // Delay is 80ms per index, capped at 480ms max delay
+    final delayMs = (widget.index * 80).clamp(0, 480);
+    Future.delayed(Duration(milliseconds: delayMs), () {
+      if (mounted) {
+        _controller.forward();
+      }
+    });
+
+    _opacity = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
+    );
+
+    _slide = Tween<Offset>(
+      begin: const Offset(0.0, 0.25),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _opacity,
+      child: SlideTransition(
+        position: _slide,
+        child: widget.child,
       ),
     );
   }

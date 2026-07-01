@@ -52,7 +52,10 @@ class _SmartCheckScreenState extends State<SmartCheckScreen> {
                 onPressed: () {
                   Navigator.pop(dialogContext);
                 },
-                child: const Text('Batal', style: TextStyle(color: Colors.grey)),
+                child: const Text(
+                  'Batal',
+                  style: TextStyle(color: Colors.grey),
+                ),
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
@@ -64,18 +67,21 @@ class _SmartCheckScreenState extends State<SmartCheckScreen> {
                 ),
                 onPressed: () async {
                   Navigator.pop(dialogContext);
-                  
+
                   // Request permissions
                   await [
                     Permission.locationWhenInUse,
                     Permission.camera,
                   ].request();
-                  
+
                   if (!mounted) return;
                   final auth = Provider.of<AuthService>(context, listen: false);
                   final token = auth.token;
                   if (token != null && mounted) {
-                    final vm = Provider.of<SmartCheckViewModel>(context, listen: false);
+                    final vm = Provider.of<SmartCheckViewModel>(
+                      context,
+                      listen: false,
+                    );
                     vm.loadStatusAndConfig(token);
                   }
                 },
@@ -272,7 +278,9 @@ class _SmartCheckScreenState extends State<SmartCheckScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: isValid ? AppTheme.success.withValues(alpha: 0.1) : AppTheme.error.withValues(alpha: 0.1),
+                color: isValid
+                    ? AppTheme.success.withValues(alpha: 0.1)
+                    : AppTheme.error.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -288,7 +296,11 @@ class _SmartCheckScreenState extends State<SmartCheckScreen> {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black54),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Colors.black54,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -370,7 +382,9 @@ class _SmartCheckScreenState extends State<SmartCheckScreen> {
                         ? 'Di Sekolah'
                         : 'Di luar sekolah (${viewModel.distance?.toStringAsFixed(1) ?? "-"}m)',
                     isValid: viewModel.isInsideGeofence,
-                    helper: viewModel.settings != null ? 'Maksimal ${viewModel.settings!.radius.toStringAsFixed(0)} meter dari koordinat sekolah' : null,
+                    helper: viewModel.settings != null
+                        ? 'Maksimal ${viewModel.settings!.radius.toStringAsFixed(0)} meter dari koordinat sekolah'
+                        : null,
                   ),
                   const SizedBox(height: 10),
                   _buildStatusCard(
@@ -378,21 +392,28 @@ class _SmartCheckScreenState extends State<SmartCheckScreen> {
                     title: 'Waktu Pengiriman',
                     value: viewModel.isWithinTimeWindow ? 'Buka' : 'Tutup',
                     isValid: viewModel.isWithinTimeWindow,
-                    helper: viewModel.settings != null ? 'Batas waktu: ${viewModel.settings!.startTime} s/d ${viewModel.settings!.endTime} WIB' : null,
+                    helper: viewModel.settings != null
+                        ? 'Batas waktu: ${viewModel.settings!.startTime} s/d ${viewModel.settings!.endTime} WIB'
+                        : null,
                   ),
                   const SizedBox(height: 10),
                   _buildStatusCard(
                     icon: Icons.calendar_today_rounded,
                     title: 'Hari Kerja / Libur',
-                    value: viewModel.isHoliday ? 'Hari Libur / Minggu' : 'Hari Sekolah',
+                    value: viewModel.isHoliday
+                        ? 'Hari Libur / Akhir Pekan'
+                        : 'Hari Sekolah',
                     isValid: !viewModel.isHoliday,
-                    helper: 'Pengiriman dinonaktifkan pada hari libur dan hari Minggu',
+                    helper:
+                        'Pengiriman dinonaktifkan pada hari libur dan akhir pekan',
                   ),
                   const SizedBox(height: 10),
                   _buildStatusCard(
                     icon: Icons.assignment_ind_rounded,
                     title: 'Jadwal Piket Anda',
-                    value: viewModel.isOnDutyToday ? 'Hari Ini Piket' : 'Tidak Piket Hari Ini',
+                    value: viewModel.isOnDutyToday
+                        ? 'Hari Ini Piket'
+                        : 'Tidak Piket Hari Ini',
                     isValid: viewModel.isOnDutyToday,
                     helper: 'Hari Ini: ${translateDay(viewModel.todayDayName)}',
                   ),
@@ -404,10 +425,17 @@ class _SmartCheckScreenState extends State<SmartCheckScreen> {
 
                   // History Section Title
                   const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 8.0,
+                      vertical: 8.0,
+                    ),
                     child: Text(
                       'Riwayat Laporan Minggu Ini',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.primaryDark),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primaryDark,
+                      ),
                     ),
                   ),
 
@@ -417,11 +445,18 @@ class _SmartCheckScreenState extends State<SmartCheckScreen> {
                         padding: const EdgeInsets.all(24.0),
                         child: Column(
                           children: [
-                            Icon(Icons.history_rounded, size: 48, color: Colors.grey.shade400),
+                            Icon(
+                              Icons.history_rounded,
+                              size: 48,
+                              color: Colors.grey.shade400,
+                            ),
                             const SizedBox(height: 12),
                             const Text(
                               'Belum ada laporan minggu ini.',
-                              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black54,
+                              ),
                             ),
                           ],
                         ),
@@ -429,7 +464,10 @@ class _SmartCheckScreenState extends State<SmartCheckScreen> {
                     )
                   else
                     ...viewModel.weeklySubmissions.map((sub) {
-                      final teamMembers = _getTeamMembersStr(sub.date, viewModel.schedules);
+                      final teamMembers = _getTeamMembersStr(
+                        sub.date,
+                        viewModel.schedules,
+                      );
                       final uploadTime = _formatTime(sub.createdAt);
                       final displayScore = sub.displayScore;
 
@@ -441,20 +479,28 @@ class _SmartCheckScreenState extends State<SmartCheckScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           _formatFullDate(sub.date),
-                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 15,
+                                          ),
                                         ),
                                         const SizedBox(height: 2),
                                         Text(
                                           'Diunggah oleh: ${sub.submittedBy ?? "Siswa"} • Jam $uploadTime WIB',
-                                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -468,7 +514,11 @@ class _SmartCheckScreenState extends State<SmartCheckScreen> {
                               if (sub.photoUrls.isNotEmpty) ...[
                                 const Text(
                                   'Foto Dokumentasi:',
-                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black54),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black54,
+                                  ),
                                 ),
                                 const SizedBox(height: 6),
                                 SizedBox(
@@ -478,8 +528,8 @@ class _SmartCheckScreenState extends State<SmartCheckScreen> {
                                     itemCount: sub.photoUrls.length,
                                     itemBuilder: (context, pIndex) {
                                       final path = sub.photoUrls[pIndex];
-                                      final imageUrl = path.startsWith('http') 
-                                          ? path 
+                                      final imageUrl = path.startsWith('http')
+                                          ? path
                                           : '${AppConfig.baseUrl}/storage/$path';
 
                                       // Label of the photo based on index
@@ -489,29 +539,54 @@ class _SmartCheckScreenState extends State<SmartCheckScreen> {
                                       if (pIndex == 2) slotLabel = 'Tambahan';
 
                                       return Padding(
-                                        padding: const EdgeInsets.only(right: 8.0),
+                                        padding: const EdgeInsets.only(
+                                          right: 8.0,
+                                        ),
                                         child: Column(
                                           children: [
                                             Expanded(
                                               child: ClipRRect(
-                                                borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
+                                                borderRadius:
+                                                    BorderRadius.circular(
+                                                      AppTheme.radiusSmall,
+                                                    ),
                                                 child: Image.network(
                                                   imageUrl,
-                                                  headers: {'Authorization': 'Bearer $token'},
+                                                  headers: {
+                                                    'Authorization':
+                                                        'Bearer $token',
+                                                  },
                                                   width: 80,
                                                   fit: BoxFit.cover,
-                                                  errorBuilder: (context, error, stackTrace) {
-                                                    return Container(
-                                                      width: 80,
-                                                      color: Colors.grey.shade200,
-                                                      child: const Icon(Icons.broken_image_rounded, color: Colors.grey),
-                                                    );
-                                                  },
+                                                  errorBuilder:
+                                                      (
+                                                        context,
+                                                        error,
+                                                        stackTrace,
+                                                      ) {
+                                                        return Container(
+                                                          width: 80,
+                                                          color: Colors
+                                                              .grey
+                                                              .shade200,
+                                                          child: const Icon(
+                                                            Icons
+                                                                .broken_image_rounded,
+                                                            color: Colors.grey,
+                                                          ),
+                                                        );
+                                                      },
                                                 ),
                                               ),
                                             ),
                                             const SizedBox(height: 2),
-                                            Text(slotLabel, style: const TextStyle(fontSize: 9, color: Colors.grey)),
+                                            Text(
+                                              slotLabel,
+                                              style: const TextStyle(
+                                                fontSize: 9,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
                                           ],
                                         ),
                                       );
@@ -525,16 +600,25 @@ class _SmartCheckScreenState extends State<SmartCheckScreen> {
                               Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Icon(Icons.group_rounded, size: 16, color: AppTheme.primaryGreen),
+                                  const Icon(
+                                    Icons.group_rounded,
+                                    size: 16,
+                                    color: AppTheme.primaryGreen,
+                                  ),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: RichText(
                                       text: TextSpan(
-                                        style: const TextStyle(fontSize: 12, color: Colors.black87),
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.black87,
+                                        ),
                                         children: [
                                           const TextSpan(
                                             text: 'Petugas Piket Hari Itu: ',
-                                            style: TextStyle(fontWeight: FontWeight.bold),
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
                                           TextSpan(text: teamMembers),
                                         ],
@@ -547,30 +631,42 @@ class _SmartCheckScreenState extends State<SmartCheckScreen> {
 
                               // Score section
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         'AI Score: ${sub.aiScore ?? "-"}',
-                                        style: const TextStyle(fontSize: 12, color: Colors.black54),
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.black54,
+                                        ),
                                       ),
                                       const SizedBox(height: 2),
                                       Row(
                                         children: [
                                           const Text(
                                             'Skor Akhir: ',
-                                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
                                           Text(
-                                            sub.isPending ? 'Menunggu Validasi' : displayScore.toString(),
+                                            sub.isPending
+                                                ? 'Menunggu Validasi'
+                                                : displayScore.toString(),
                                             style: TextStyle(
                                               fontSize: 13,
                                               fontWeight: FontWeight.bold,
                                               color: sub.isPending
                                                   ? Colors.orange
-                                                  : (displayScore >= 75 ? AppTheme.success : AppTheme.error),
+                                                  : (displayScore >= 75
+                                                        ? AppTheme.success
+                                                        : AppTheme.error),
                                             ),
                                           ),
                                         ],
@@ -578,9 +674,14 @@ class _SmartCheckScreenState extends State<SmartCheckScreen> {
                                     ],
                                   ),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 8,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: AppTheme.primaryGreen.withValues(alpha: 0.1),
+                                      color: AppTheme.primaryGreen.withValues(
+                                        alpha: 0.1,
+                                      ),
                                       shape: BoxShape.circle,
                                     ),
                                     child: Text(
@@ -603,14 +704,22 @@ class _SmartCheckScreenState extends State<SmartCheckScreen> {
                                   runSpacing: 4,
                                   children: sub.findings.map((finding) {
                                     return Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
                                       decoration: BoxDecoration(
-                                        color: Colors.orange.withValues(alpha: 0.1),
+                                        color: Colors.orange.withValues(
+                                          alpha: 0.1,
+                                        ),
                                         borderRadius: BorderRadius.circular(4),
                                       ),
                                       child: Text(
                                         finding,
-                                        style: const TextStyle(fontSize: 10, color: Colors.orange),
+                                        style: const TextStyle(
+                                          fontSize: 10,
+                                          color: Colors.orange,
+                                        ),
                                       ),
                                     );
                                   }).toList(),
@@ -618,33 +727,52 @@ class _SmartCheckScreenState extends State<SmartCheckScreen> {
                               ],
 
                               // Validation notes
-                              if (!sub.isPending && sub.notes != null && sub.notes!.isNotEmpty) ...[
+                              if (!sub.isPending &&
+                                  sub.notes != null &&
+                                  sub.notes!.isNotEmpty) ...[
                                 const SizedBox(height: 12),
                                 Container(
                                   width: double.infinity,
                                   padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
                                     color: Colors.grey.shade50,
-                                    borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-                                    border: Border.all(color: Colors.grey.shade200),
+                                    borderRadius: BorderRadius.circular(
+                                      AppTheme.radiusMedium,
+                                    ),
+                                    border: Border.all(
+                                      color: Colors.grey.shade200,
+                                    ),
                                   ),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Row(
                                         children: [
-                                          const Icon(Icons.rate_review_rounded, size: 14, color: AppTheme.primaryGreen),
+                                          const Icon(
+                                            Icons.rate_review_rounded,
+                                            size: 14,
+                                            color: AppTheme.primaryGreen,
+                                          ),
                                           const SizedBox(width: 6),
                                           Text(
                                             'Catatan Guru PLH (${sub.verifiedBy ?? "PLH"}):',
-                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppTheme.primaryDark),
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 11,
+                                              color: AppTheme.primaryDark,
+                                            ),
                                           ),
                                         ],
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
                                         sub.notes!,
-                                        style: const TextStyle(fontSize: 11, color: Colors.black87, fontStyle: FontStyle.italic),
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          color: Colors.black87,
+                                          fontStyle: FontStyle.italic,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -695,7 +823,11 @@ class WeeklyBarChart extends StatelessWidget {
                 SizedBox(width: 8),
                 Text(
                   'Grafik Piket Minggu Ini (Senin - Jumat)',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.primaryDark),
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.primaryDark,
+                  ),
                 ),
               ],
             ),
@@ -707,7 +839,7 @@ class WeeklyBarChart extends StatelessWidget {
                 final day = entry.key;
                 final score = entry.value;
                 final isMax = day == maxDay && score > 0;
-                
+
                 return Column(
                   children: [
                     // Score Text
@@ -716,7 +848,7 @@ class WeeklyBarChart extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: isMax ? FontWeight.bold : FontWeight.normal,
-                        color: score > 0 
+                        color: score > 0
                             ? (isMax ? AppTheme.primaryGreen : Colors.black87)
                             : Colors.grey,
                       ),
@@ -724,29 +856,48 @@ class WeeklyBarChart extends StatelessWidget {
                     const SizedBox(height: 8),
                     // Bar
                     Container(
-                      height: 120 * (score / 100).clamp(0.05, 1.0), // Min height so it's visible as a tiny base if 0
+                      height:
+                          120 *
+                          (score / 100).clamp(
+                            0.05,
+                            1.0,
+                          ), // Min height so it's visible as a tiny base if 0
                       width: 32,
                       decoration: BoxDecoration(
-                        gradient: score > 0 
-                            ? (isMax 
-                                ? const LinearGradient(
-                                    begin: Alignment.bottomCenter,
-                                    end: Alignment.topCenter,
-                                    colors: [Color(0xFF1B5E20), Color(0xFF43A047)],
-                                  )
-                                : const LinearGradient(
-                                    begin: Alignment.bottomCenter,
-                                    end: Alignment.topCenter,
-                                    colors: [Color(0xFF43A047), Color(0xFF81C784)],
-                                  ))
+                        gradient: score > 0
+                            ? (isMax
+                                  ? const LinearGradient(
+                                      begin: Alignment.bottomCenter,
+                                      end: Alignment.topCenter,
+                                      colors: [
+                                        Color(0xFF1B5E20),
+                                        Color(0xFF43A047),
+                                      ],
+                                    )
+                                  : const LinearGradient(
+                                      begin: Alignment.bottomCenter,
+                                      end: Alignment.topCenter,
+                                      colors: [
+                                        Color(0xFF43A047),
+                                        Color(0xFF81C784),
+                                      ],
+                                    ))
                             : null,
                         color: score == 0 ? Colors.grey.shade200 : null,
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
-                        border: isMax 
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(8),
+                        ),
+                        border: isMax
                             ? Border.all(color: Colors.amber, width: 2)
                             : null,
-                        boxShadow: isMax 
-                            ? [BoxShadow(color: Colors.amber.withValues(alpha: 0.3), blurRadius: 6, spreadRadius: 1)]
+                        boxShadow: isMax
+                            ? [
+                                BoxShadow(
+                                  color: Colors.amber.withValues(alpha: 0.3),
+                                  blurRadius: 6,
+                                  spreadRadius: 1,
+                                ),
+                              ]
                             : null,
                       ),
                     ),

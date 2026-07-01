@@ -116,59 +116,198 @@ class _CleanTrackScreenState extends State<CleanTrackScreen> {
       length: 2,
       child: Scaffold(
         backgroundColor: const Color(0xFFF8FAF8),
-        appBar: AppBar(
-          flexibleSpace: Container(
-            decoration: const BoxDecoration(
-              gradient: AppColors.emeraldGradient,
-            ),
-          ),
-          title: const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Riwayat Kebersihan',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-              ),
-              Text(
-                'Laporan piket harian & nilai bulanan kelas Anda',
-                style: TextStyle(fontSize: 12, color: Colors.white70),
-              ),
-            ],
-          ),
-          bottom: const TabBar(
-            indicatorColor: Colors.white,
-            indicatorWeight: 3,
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white70,
-            labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            unselectedLabelStyle: TextStyle(fontWeight: FontWeight.normal, fontSize: 14),
-            tabs: [
-              Tab(text: 'Laporan Harian'),
-              Tab(text: 'Nilai Bulanan'),
-            ],
-          ),
-          elevation: 0,
-          backgroundColor: Colors.transparent,
-        ),
-        body: ChangeNotifierProvider<CleanTrackViewModel>(
-          create: (context) {
-            final vm = CleanTrackViewModel();
-            if (token != null) {
-              vm.fetchHistory(token);
-              vm.fetchMonthlyScores(token);
-            }
-            return vm;
-          },
-          child: Consumer<CleanTrackViewModel>(
-            builder: (context, viewModel, child) {
-              return TabBarView(
-                children: [
-                  _buildDailyTab(context, viewModel, token),
-                  _buildMonthlyTab(context, viewModel, token),
+        body: Column(
+          children: [
+            // ─── PREMIUM GRADIENT HEADER ───
+            Container(
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF0F4D3A), Color(0xFF06241B)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(32),
+                  bottomRight: Radius.circular(32),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Color(0xFF06241B),
+                    blurRadius: 20,
+                    offset: Offset(0, 8),
+                  ),
                 ],
-              );
-            },
-          ),
+              ),
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 22),
+                  child: Column(
+                    children: [
+                      // Header row with back button + icon + title
+                      Row(
+                        children: [
+                          // Back Button
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(14),
+                              onTap: () => Navigator.pop(context),
+                              child: Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.2),
+                                  ),
+                                ),
+                                child: const Icon(
+                                  Icons.arrow_back_ios_new_rounded,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          // Icon
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.12),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.history_rounded,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          // Title & subtitle
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Riwayat Kebersihan',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    letterSpacing: 0.3,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  'Laporan piket harian & nilai bulanan kelas',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white60,
+                                    letterSpacing: 0.2,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 22),
+                      // Premium sliding TabBar
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(28),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.08),
+                            width: 1,
+                          ),
+                        ),
+                        child: const TabBar(
+                          labelColor: Color(0xFF06241B),
+                          unselectedLabelColor: Colors.white,
+                          indicatorSize: TabBarIndicatorSize.tab,
+                          indicator: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.all(Radius.circular(24)),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black12,
+                                blurRadius: 8,
+                                offset: Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          dividerColor: Colors.transparent,
+                          labelStyle: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            letterSpacing: 0.3,
+                          ),
+                          unselectedLabelStyle: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 13,
+                          ),
+                          tabs: [
+                            Tab(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.receipt_long_rounded, size: 16),
+                                  SizedBox(width: 6),
+                                  Text('Laporan Harian'),
+                                ],
+                              ),
+                            ),
+                            Tab(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.bar_chart_rounded, size: 16),
+                                  SizedBox(width: 6),
+                                  Text('Nilai Bulanan'),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // ─── BODY ───
+            Expanded(
+              child: ChangeNotifierProvider<CleanTrackViewModel>(
+                create: (context) {
+                  final vm = CleanTrackViewModel();
+                  if (token != null) {
+                    vm.fetchHistory(token);
+                    vm.fetchMonthlyScores(token);
+                  }
+                  return vm;
+                },
+                child: Consumer<CleanTrackViewModel>(
+                  builder: (context, viewModel, child) {
+                    return TabBarView(
+                      children: [
+                        _buildDailyTab(context, viewModel, token),
+                        _buildMonthlyTab(context, viewModel, token),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

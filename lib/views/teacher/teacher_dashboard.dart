@@ -19,20 +19,36 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
 
   List<Widget> _buildScreens(String roleType) {
     if (roleType == 'homeroom') {
-      return const [
-        ClassMonitorScreen(),
-        PiketManagementScreen(),
-        CleanRankScreen(),
-      ];
+      return const [ClassMonitorScreen(), PiketManagementScreen()];
     } else if (roleType == 'plh') {
-      return const [
-        VerificationQueueScreen(),
-        CleanRankScreen(),
-      ];
+      return const [VerificationQueueScreen()];
     } else {
       // Regular teacher
       return const [
-        CleanRankScreen(),
+        Scaffold(
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.school_rounded,
+                  size: 64,
+                  color: AppTheme.primaryGreen,
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'Selamat Datang Guru ZieClean!',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Silakan akses peringkat melalui tombol di kanan atas.',
+                  style: TextStyle(color: Colors.black54),
+                ),
+              ],
+            ),
+          ),
+        ),
       ];
     }
   }
@@ -50,11 +66,6 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
           activeIcon: Icon(Icons.calendar_month_rounded),
           label: 'Jadwal Piket',
         ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.leaderboard_outlined),
-          activeIcon: Icon(Icons.leaderboard_rounded),
-          label: 'CleanRank',
-        ),
       ];
     } else if (roleType == 'plh') {
       return const [
@@ -63,20 +74,9 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
           activeIcon: Icon(Icons.fact_check_rounded),
           label: 'Validasi AI',
         ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.leaderboard_outlined),
-          activeIcon: Icon(Icons.leaderboard_rounded),
-          label: 'CleanRank',
-        ),
       ];
     } else {
-      return const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.leaderboard_outlined),
-          activeIcon: Icon(Icons.leaderboard_rounded),
-          label: 'CleanRank',
-        ),
-      ];
+      return const [];
     }
   }
 
@@ -97,9 +97,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
     final user = auth.user;
 
     if (user == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final String roleType = user.roleType ?? 'regular';
@@ -121,12 +119,25 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             Text(
-              _getRoleLabel(user.roleType) + (user.className != null ? ' - Kelas ${user.className}' : ''),
+              _getRoleLabel(user.roleType) +
+                  (user.className != null ? ' - Kelas ${user.className}' : ''),
               style: const TextStyle(fontSize: 13, color: Colors.white70),
             ),
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.leaderboard_rounded),
+            tooltip: 'Peringkat',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CleanRankScreen(),
+                ),
+              );
+            },
+          ),
           IconButton(
             key: const ValueKey('logout_button'),
             icon: const Icon(Icons.logout_rounded),
@@ -136,7 +147,9 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                 context: context,
                 builder: (context) => AlertDialog(
                   title: const Text('Keluar Aplikasi'),
-                  content: const Text('Apakah Anda yakin ingin keluar dari ZieClean?'),
+                  content: const Text(
+                    'Apakah Anda yakin ingin keluar dari ZieClean?',
+                  ),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context, false),
