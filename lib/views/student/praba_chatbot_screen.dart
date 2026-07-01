@@ -45,7 +45,7 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
       }
       _scrollToBottom();
     } catch (e) {
-      print("Failed to load chat history: $e");
+      debugPrint("Failed to load chat history: $e");
     }
   }
 
@@ -54,7 +54,7 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('praba_chat_history', jsonEncode(_messages));
     } catch (e) {
-      print("Failed to save chat history: $e");
+      debugPrint("Failed to save chat history: $e");
     }
   }
 
@@ -148,6 +148,7 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
       _addUserMessage("Mengirim foto dari galeri...", imagePath: image.path);
       await _processImageInference(image.path);
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Gagal mengambil gambar dari galeri: $e")),
       );
@@ -203,6 +204,7 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
         });
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error pemindai kamera: $e")),
       );
@@ -300,7 +302,7 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              AppTheme.primaryGreen.withOpacity(0.05),
+              AppTheme.primaryGreen.withValues(alpha: 0.05),
               Colors.white,
             ],
           ),
@@ -408,7 +410,7 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
+                        color: Colors.black.withValues(alpha: 0.04),
                         blurRadius: 6,
                         offset: const Offset(0, 3),
                       ),
@@ -456,10 +458,10 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.primaryGreen.withOpacity(0.15)),
+        border: Border.all(color: AppTheme.primaryGreen.withValues(alpha: 0.15)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -537,7 +539,7 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, size: 20, color: color),

@@ -73,11 +73,11 @@ class PrabaAiScreen extends StatelessWidget {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
                 border: Border.all(
-                  color: AppTheme.primaryGreen.withOpacity(0.2),
+                  color: AppTheme.primaryGreen.withValues(alpha: 0.2),
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
+                    color: Colors.black.withValues(alpha: 0.04),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),

@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:image/image.dart' as img;
@@ -21,7 +20,6 @@ class _CameraScannerScreenState extends State<CameraScannerScreen> {
   bool _isCapturing = false;
   String _predictionText = "Arahkan kamera ke objek...";
   double _confidence = 0.0;
-  Map<String, dynamic>? _lastResult;
   Timer? _scanTimer;
   bool _streamActive = false;
   CameraImage? _latestFrame;
@@ -135,11 +133,9 @@ class _CameraScannerScreenState extends State<CameraScannerScreen> {
           if (conf < 0.40) {
             _predictionText = "Objek tidak dikenali";
             _confidence = conf;
-            _lastResult = null;
           } else {
             _predictionText = "${result['class_name']}";
             _confidence = conf;
-            _lastResult = result;
           }
         });
       }
@@ -207,6 +203,7 @@ class _CameraScannerScreenState extends State<CameraScannerScreen> {
 
     // Brief pause to let the camera stabilize after stopping stream
     await Future.delayed(const Duration(milliseconds: 300));
+    if (!mounted) return;
 
     showDialog(
       context: context,
@@ -220,7 +217,34 @@ class _CameraScannerScreenState extends State<CameraScannerScreen> {
 
     try {
       final XFile file = await _controller!.takePicture();
-      final String finalPath = file.path;
+      final String originalPath = file.path;
+
+      // Crop the captured image in the exact same way as the live frame
+      final Uint8List originalBytes = await File(originalPath).readAsBytes();
+      final img.Image? decodedImg = img.decodeImage(originalBytes);
+      
+      String finalPath = originalPath;
+      if (decodedImg != null) {
+        final int cropSize = (decodedImg.width < decodedImg.height
+                ? decodedImg.width
+                : decodedImg.height) *
+            70 ~/
+            100;
+        final int offsetX = (decodedImg.width - cropSize) ~/ 2;
+        final int offsetY = (decodedImg.height - cropSize) ~/ 2;
+        final img.Image croppedImg = img.copyCrop(
+          decodedImg,
+          x: offsetX,
+          y: offsetY,
+          width: cropSize,
+          height: cropSize,
+        );
+
+        // Overwrite the original file with the cropped image
+        final File croppedFile = File(originalPath);
+        await croppedFile.writeAsBytes(img.encodeJpg(croppedImg, quality: 90));
+      }
+
       final result = await OnnxPredictor().predict(finalPath);
 
       if (mounted) {
@@ -317,7 +341,7 @@ class _CameraScannerScreenState extends State<CameraScannerScreen> {
               padding:
                   const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.7),
+                color: Colors.black.withValues(alpha: 0.7),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(

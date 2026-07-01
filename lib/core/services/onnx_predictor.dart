@@ -1,7 +1,6 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:math';
-import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_onnxruntime/flutter_onnxruntime.dart';
 import 'package:image/image.dart' as img;
 
@@ -185,7 +184,7 @@ class OnnxPredictor {
       final ort = OnnxRuntime();
       _session = await ort.createSessionFromAsset('assets/vibecomodel.onnx');
     } catch (e) {
-      print("Failed to initialize ONNX Runtime session: $e");
+      debugPrint("Failed to initialize ONNX Runtime session: $e");
       rethrow;
     }
   }
@@ -313,7 +312,7 @@ class OnnxPredictor {
         "notes": notes,
       };
     } catch (e) {
-      print("Prediction failed: $e");
+      debugPrint("Prediction failed: $e");
       return {
         "success": false,
         "error": e.toString(),
