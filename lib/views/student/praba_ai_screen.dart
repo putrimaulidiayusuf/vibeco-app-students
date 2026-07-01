@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import 'praba_chatbot_screen.dart';
 
 class PrabaAiScreen extends StatelessWidget {
   const PrabaAiScreen({super.key});
@@ -64,25 +65,34 @@ class PrabaAiScreen extends StatelessWidget {
             ),
             const SizedBox(height: 32),
             // Coming soon card
+            // Chat bot promotion card
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: AppTheme.surfaceGreen,
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
                 border: Border.all(
-                  color: AppTheme.primaryGreen.withValues(alpha: 0.2),
+                  color: AppTheme.primaryGreen.withOpacity(0.2),
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Column(
                 children: [
                   const Icon(
-                    Icons.construction_rounded,
-                    size: 32,
-                    color: AppTheme.warning,
+                    Icons.auto_awesome,
+                    size: 40,
+                    color: AppTheme.primaryGreen,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   const Text(
-                    'Segera Hadir',
+                    'Asisten Deteksi Sampah',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -91,14 +101,51 @@ class PrabaAiScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Fitur PRABA AI sedang dalam tahap pengembangan. '
-                    'Nantikan kemampuan AI yang akan membantu '
-                    'menganalisis dan meningkatkan kebersihan kelas Anda!',
+                    'Gunakan fitur obrolan cerdas untuk mendeteksi sampah Anda '
+                    'menggunakan model AI secara langsung, baik lewat kamera pemindai '
+                    'maupun mengunggah foto dari galeri.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey.shade600,
                       height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryGreen,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                        ),
+                        elevation: 0,
+                      ),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const PrabaChatBotScreen(),
+                          ),
+                        );
+                      },
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.chat_bubble_outline_rounded, size: 20),
+                          SizedBox(width: 8),
+                          Text(
+                            'Mulai Chat dengan PRABA AI',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
