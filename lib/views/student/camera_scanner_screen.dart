@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
+import 'package:image/image.dart' as img;
 import '../../core/services/onnx_predictor.dart';
 import '../../core/theme/app_theme.dart';
 
@@ -14,13 +16,15 @@ class CameraScannerScreen extends StatefulWidget {
 
 class _CameraScannerScreenState extends State<CameraScannerScreen> {
   CameraController? _controller;
-  List<CameraDescription>? _cameras;
   bool _isInitialized = false;
   bool _isProcessing = false;
-  Timer? _scanTimer;
-  String _predictionText = "Mengidentifikasi...";
+  bool _isCapturing = false;
+  String _predictionText = "Arahkan kamera ke objek...";
   double _confidence = 0.0;
   Map<String, dynamic>? _lastResult;
+  Timer? _scanTimer;
+  bool _streamActive = false;
+  CameraImage? _latestFrame;
 
   @override
   void initState() {
@@ -30,91 +34,179 @@ class _CameraScannerScreenState extends State<CameraScannerScreen> {
 
   Future<void> _initializeCamera() async {
     try {
-      _cameras = await availableCameras();
-      if (_cameras == null || _cameras!.isEmpty) {
-        setState(() {
-          _predictionText = "Kamera tidak ditemukan";
-        });
+      final cameras = await availableCameras();
+      if (cameras.isEmpty) {
+        if (mounted) {
+          setState(() => _predictionText = "Kamera tidak ditemukan");
+        }
         return;
       }
 
-      final backCam = _cameras!.firstWhere(
+      final backCam = cameras.firstWhere(
         (cam) => cam.lensDirection == CameraLensDirection.back,
-        orElse: () => _cameras!.first,
+        orElse: () => cameras.first,
       );
 
       _controller = CameraController(
         backCam,
-        ResolutionPreset.medium,
+        ResolutionPreset.medium, // medium for preview quality
         enableAudio: false,
+        imageFormatGroup: ImageFormatGroup.yuv420,
       );
 
       await _controller!.initialize();
       if (!mounted) return;
 
-      setState(() {
-        _isInitialized = true;
-      });
+      setState(() => _isInitialized = true);
 
-      _startScanTimer();
+      // Start the image stream for real-time scanning
+      _startImageStream();
     } catch (e) {
-      print("Camera initialization error: $e");
       if (mounted) {
-        setState(() {
-          _predictionText = "Error kamera: $e";
-        });
+        setState(() => _predictionText = "Error kamera: $e");
       }
     }
   }
 
-  void _startScanTimer() {
-    _scanTimer = Timer.periodic(const Duration(milliseconds: 1500), (timer) async {
-      if (_isProcessing || !_isInitialized || _controller == null || !_controller!.value.isInitialized) {
+  void _startImageStream() {
+    if (_streamActive || _controller == null) return;
+
+    _controller!.startImageStream((CameraImage frame) {
+      // Just store the latest frame, don't process every one
+      _latestFrame = frame;
+    });
+    _streamActive = true;
+
+    // Process a frame every 2.5 seconds
+    _scanTimer = Timer.periodic(const Duration(milliseconds: 2500), (_) {
+      _processLatestFrame();
+    });
+
+    // Also process the first frame after a short delay
+    Future.delayed(const Duration(milliseconds: 800), _processLatestFrame);
+  }
+
+  Future<void> _processLatestFrame() async {
+    if (_isProcessing || _isCapturing || _latestFrame == null || !mounted) return;
+
+    _isProcessing = true;
+    final frame = _latestFrame!;
+
+    try {
+      // Convert CameraImage (YUV420) to RGB Image, then center-crop
+      final img.Image? rgbImage = _convertYUV420toImage(frame);
+      if (rgbImage == null) {
+        _isProcessing = false;
         return;
       }
 
-      setState(() {
-        _isProcessing = true;
-      });
+      // Center crop 70% of the image (matching the scan box overlay)
+      final int cropSize = (rgbImage.width < rgbImage.height
+              ? rgbImage.width
+              : rgbImage.height) *
+          70 ~/
+          100;
+      final int offsetX = (rgbImage.width - cropSize) ~/ 2;
+      final int offsetY = (rgbImage.height - cropSize) ~/ 2;
+      final img.Image cropped = img.copyCrop(
+        rgbImage,
+        x: offsetX,
+        y: offsetY,
+        width: cropSize,
+        height: cropSize,
+      );
 
-      String? tempPath;
-      try {
-        final XFile file = await _controller!.takePicture();
-        tempPath = file.path;
+      // Save to a temporary file for OnnxPredictor
+      final tempDir = Directory.systemTemp;
+      final tempFile = File(
+          '${tempDir.path}/scan_frame_${DateTime.now().millisecondsSinceEpoch}.jpg');
+      await tempFile.writeAsBytes(img.encodeJpg(cropped, quality: 85));
 
-        final result = await OnnxPredictor().predict(tempPath);
-        if (mounted && result['success'] == true) {
-          setState(() {
+      final result = await OnnxPredictor().predict(tempFile.path);
+
+      // Clean up temp file
+      if (await tempFile.exists()) {
+        await tempFile.delete();
+      }
+
+      if (mounted && result['success'] == true) {
+        final double conf = result['confidence'] as double;
+        setState(() {
+          if (conf < 0.40) {
+            _predictionText = "Objek tidak dikenali";
+            _confidence = conf;
+            _lastResult = null;
+          } else {
             _predictionText = "${result['class_name']}";
-            _confidence = result['confidence'] as double;
+            _confidence = conf;
             _lastResult = result;
-          });
-        }
-      } catch (e) {
-        print("Real-time scan prediction error: $e");
-      } finally {
-        if (tempPath != null) {
-          final fileToDelete = File(tempPath);
-          if (await fileToDelete.exists()) {
-            await fileToDelete.delete();
           }
-        }
-        if (mounted) {
-          setState(() {
-            _isProcessing = false;
-          });
+        });
+      }
+    } catch (e) {
+      // Silently continue scanning on error
+    } finally {
+      _isProcessing = false;
+    }
+  }
+
+  /// Convert YUV420 CameraImage to img.Image (RGB)
+  img.Image? _convertYUV420toImage(CameraImage cameraImage) {
+    try {
+      final int width = cameraImage.width;
+      final int height = cameraImage.height;
+
+      final yPlane = cameraImage.planes[0];
+      final uPlane = cameraImage.planes[1];
+      final vPlane = cameraImage.planes[2];
+
+      final yRowStride = yPlane.bytesPerRow;
+      final uvRowStride = uPlane.bytesPerRow;
+      final uvPixelStride = uPlane.bytesPerPixel ?? 1;
+
+      final image = img.Image(width: width, height: height);
+
+      for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+          final int yIndex = y * yRowStride + x;
+          final int uvIndex = (y ~/ 2) * uvRowStride + (x ~/ 2) * uvPixelStride;
+
+          final int yVal = yPlane.bytes[yIndex];
+          final int uVal = uPlane.bytes[uvIndex];
+          final int vVal = vPlane.bytes[uvIndex];
+
+          // YUV to RGB conversion
+          int r = (yVal + 1.370705 * (vVal - 128)).round().clamp(0, 255);
+          int g = (yVal - 0.337633 * (uVal - 128) - 0.698001 * (vVal - 128))
+              .round()
+              .clamp(0, 255);
+          int b = (yVal + 1.732446 * (uVal - 128)).round().clamp(0, 255);
+
+          image.setPixelRgb(x, y, r, g, b);
         }
       }
-    });
+
+      return image;
+    } catch (e) {
+      return null;
+    }
   }
 
   Future<void> _captureAndReturn() async {
-    if (!_isInitialized || _controller == null || !_controller!.value.isInitialized) {
-      return;
+    if (!_isInitialized || _controller == null || _isCapturing) return;
+
+    setState(() => _isCapturing = true);
+
+    // Stop the image stream before taking a picture
+    if (_streamActive) {
+      _scanTimer?.cancel();
+      _scanTimer = null;
+      await _controller!.stopImageStream();
+      _streamActive = false;
     }
 
-    _scanTimer?.cancel();
-    _scanTimer = null;
+    // Brief pause to let the camera stabilize after stopping stream
+    await Future.delayed(const Duration(milliseconds: 300));
 
     showDialog(
       context: context,
@@ -129,24 +221,24 @@ class _CameraScannerScreenState extends State<CameraScannerScreen> {
     try {
       final XFile file = await _controller!.takePicture();
       final String finalPath = file.path;
-
       final result = await OnnxPredictor().predict(finalPath);
 
       if (mounted) {
-        Navigator.pop(context); // Dismiss loading spinner
+        Navigator.pop(context); // Dismiss spinner
         Navigator.pop(context, {
           'imagePath': finalPath,
           'prediction': result,
         });
       }
     } catch (e) {
-      print("Capture failed: $e");
       if (mounted) {
-        Navigator.pop(context); // Dismiss loading
+        Navigator.pop(context); // Dismiss spinner
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Gagal mengambil foto: $e")),
         );
-        _startScanTimer(); // Resume scan timer
+        setState(() => _isCapturing = false);
+        // Restart stream
+        _startImageStream();
       }
     }
   }
@@ -154,6 +246,9 @@ class _CameraScannerScreenState extends State<CameraScannerScreen> {
   @override
   void dispose() {
     _scanTimer?.cancel();
+    if (_streamActive && _controller != null) {
+      _controller!.stopImageStream().catchError((_) {});
+    }
     _controller?.dispose();
     super.dispose();
   }
@@ -168,7 +263,8 @@ class _CameraScannerScreenState extends State<CameraScannerScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryGreen),
+                valueColor:
+                    AlwaysStoppedAnimation<Color>(AppTheme.primaryGreen),
               ),
               const SizedBox(height: 16),
               Text(
@@ -188,36 +284,52 @@ class _CameraScannerScreenState extends State<CameraScannerScreen> {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
+          // Camera preview
           Transform.scale(
             scale: 1 / (_controller!.value.aspectRatio * deviceRatio),
             alignment: Alignment.topCenter,
             child: CameraPreview(_controller!),
           ),
 
+          // Scan box overlay
           Center(
             child: Container(
               width: size.width * 0.7,
               height: size.width * 0.7,
               decoration: BoxDecoration(
-                border: Border.all(color: AppTheme.primaryGreen, width: 3.0),
+                border: Border.all(
+                  color: _confidence >= 0.40
+                      ? AppTheme.primaryGreen
+                      : Colors.orange,
+                  width: 3.0,
+                ),
                 borderRadius: BorderRadius.circular(16.0),
               ),
             ),
           ),
 
+          // Top status bar
           Positioned(
             top: 60.0,
             left: 20.0,
             right: 20.0,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               decoration: BoxDecoration(
                 color: Colors.black.withOpacity(0.7),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.auto_awesome, color: AppTheme.primaryGreen),
+                  Icon(
+                    _confidence >= 0.40
+                        ? Icons.auto_awesome
+                        : Icons.search,
+                    color: _confidence >= 0.40
+                        ? AppTheme.primaryGreen
+                        : Colors.orange,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -235,9 +347,11 @@ class _CameraScannerScreenState extends State<CameraScannerScreen> {
                         Text(
                           _confidence > 0.0
                               ? "$_predictionText (${(_confidence * 100).toStringAsFixed(1)}%)"
-                              : "Mengidentifikasi...",
-                          style: const TextStyle(
-                            color: Colors.white,
+                              : "Arahkan kamera ke objek...",
+                          style: TextStyle(
+                            color: _confidence >= 0.40
+                                ? Colors.white
+                                : Colors.orange.shade200,
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
@@ -250,22 +364,26 @@ class _CameraScannerScreenState extends State<CameraScannerScreen> {
             ),
           ),
 
+          // Bottom controls
           Positioned(
             bottom: 40.0,
             left: 0,
             right: 0,
             child: Column(
               children: [
-                const Text(
-                  "Arahkan kamera ke sampah lalu jepret foto",
-                  style: TextStyle(color: Colors.white70, fontSize: 13),
+                Text(
+                  _confidence < 0.40 && _confidence > 0
+                      ? "Confidence rendah - dekatkan objek ke kotak scan"
+                      : "Arahkan kamera ke sampah lalu jepret foto",
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
                 ),
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
+                      icon: const Icon(Icons.arrow_back,
+                          color: Colors.white, size: 28),
                       onPressed: () => Navigator.pop(context),
                     ),
                     GestureDetector(

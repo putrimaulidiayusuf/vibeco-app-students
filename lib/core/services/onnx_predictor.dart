@@ -286,8 +286,24 @@ class OnnxPredictor {
         notes = notesList[random.nextInt(notesList.length)];
       }
 
+      // Confidence threshold: if below 40%, mark as low confidence
+      if (confidence < 0.40) {
+        return {
+          "success": true,
+          "low_confidence": true,
+          "class": rawClass.toUpperCase(),
+          "confidence": confidence,
+          "class_name": _translateCategory(rawClass),
+          "disposal": disposal,
+          "recycling": recycling,
+          "impact": impact,
+          "notes": notes,
+        };
+      }
+
       return {
         "success": true,
+        "low_confidence": false,
         "class": rawClass.toUpperCase(),
         "confidence": confidence,
         "class_name": _translateCategory(rawClass),

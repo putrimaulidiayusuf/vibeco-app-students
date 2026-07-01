@@ -108,14 +108,26 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
       if (result['success'] == true) {
         final double confPct = (result['confidence'] as double) * 100;
         final String category = result['class_name'];
-        final String responseText = 
-            "Saya mendeteksi objek ini sebagai sampah **$category** dengan tingkat keyakinan **${confPct.toStringAsFixed(1)}%**.";
         
-        _addAiMessage(
-          responseText,
-          prediction: result,
-          imagePath: imagePath,
-        );
+        if (result['low_confidence'] == true) {
+          final String responseText = 
+              "Saya melihat kemiripan dengan sampah **$category** (${confPct.toStringAsFixed(1)}%), namun tingkat keyakinan saya masih di bawah batas minimal (40%).\n\n"
+              "Mohon pastikan objek sampah berada di tengah frame, memiliki pencahayaan yang cukup, dan tidak terhalang bayangan agar saya dapat mendeteksinya dengan akurat.";
+          
+          _addAiMessage(
+            responseText,
+            imagePath: imagePath,
+          );
+        } else {
+          final String responseText = 
+              "Saya mendeteksi objek ini sebagai sampah **$category** dengan tingkat keyakinan **${confPct.toStringAsFixed(1)}%**.";
+          
+          _addAiMessage(
+            responseText,
+            prediction: result,
+            imagePath: imagePath,
+          );
+        }
       } else {
         _addAiMessage("Maaf, saya tidak dapat menganalisis gambar ini. Error: ${result['error']}");
       }
@@ -162,14 +174,26 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
         if (pred['success'] == true) {
           final double confPct = (pred['confidence'] as double) * 100;
           final String category = pred['class_name'];
-          final String responseText = 
-              "Saya mendeteksi objek ini sebagai sampah **$category** dengan tingkat keyakinan **${confPct.toStringAsFixed(1)}%**.";
 
-          _addAiMessage(
-            responseText,
-            prediction: pred,
-            imagePath: imagePath,
-          );
+          if (pred['low_confidence'] == true) {
+            final String responseText = 
+                "Hasil jepretan kamera menunjukkan kemiripan dengan sampah **$category** (${confPct.toStringAsFixed(1)}%), namun tingkat keyakinan saya masih terlalu rendah.\n\n"
+                "Coba dekatkan kamera ke objek sampah dan pastikan posisinya berada tepat di tengah kotak pemindai.";
+            
+            _addAiMessage(
+              responseText,
+              imagePath: imagePath,
+            );
+          } else {
+            final String responseText = 
+                "Saya mendeteksi objek ini sebagai sampah **$category** dengan tingkat keyakinan **${confPct.toStringAsFixed(1)}%**.";
+
+            _addAiMessage(
+              responseText,
+              prediction: pred,
+              imagePath: imagePath,
+            );
+          }
         } else {
           _addAiMessage("Gagal mendeteksi sampah pada foto jepretan kamera: ${pred['error']}");
         }
@@ -427,7 +451,7 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
   Widget _buildIntelligenceCard(Map<String, dynamic> pred) {
     return Container(
       width: double.infinity,
-      maxHeight: 400,
+      constraints: const BoxConstraints(maxHeight: 400),
       margin: const EdgeInsets.only(top: 8, bottom: 8),
       decoration: BoxDecoration(
         color: Colors.white,
