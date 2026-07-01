@@ -37,9 +37,18 @@ class CleanRankViewModel extends ChangeNotifier {
       ]);
 
       final rawClassRankings = results[0] as List<PiketDayRanking>;
-      rawClassRankings.sort((a, b) => b.averageScore.compareTo(a.averageScore));
-      _classRankings = List.generate(rawClassRankings.length, (index) {
-        final original = rawClassRankings[index];
+      final filteredRaw = rawClassRankings.where((original) {
+        final day = original.dayOfWeek.toLowerCase();
+        final name = original.dayNameId.toLowerCase();
+        return day != 'saturday' &&
+            day != 'sunday' &&
+            name != 'sabtu' &&
+            name != 'minggu';
+      }).toList();
+
+      filteredRaw.sort((a, b) => b.averageScore.compareTo(a.averageScore));
+      _classRankings = List.generate(filteredRaw.length, (index) {
+        final original = filteredRaw[index];
         return PiketDayRanking(
           rank: index + 1,
           dayOfWeek: original.dayOfWeek,
@@ -67,10 +76,22 @@ class CleanRankViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final rawClassRankings = await _apiService.getCleanestDay(token, schoolClassId: schoolClassId);
-      rawClassRankings.sort((a, b) => b.averageScore.compareTo(a.averageScore));
-      _classRankings = List.generate(rawClassRankings.length, (index) {
-        final original = rawClassRankings[index];
+      final rawClassRankings = await _apiService.getCleanestDay(
+        token,
+        schoolClassId: schoolClassId,
+      );
+      final filteredRaw = rawClassRankings.where((original) {
+        final day = original.dayOfWeek.toLowerCase();
+        final name = original.dayNameId.toLowerCase();
+        return day != 'saturday' &&
+            day != 'sunday' &&
+            name != 'sabtu' &&
+            name != 'minggu';
+      }).toList();
+
+      filteredRaw.sort((a, b) => b.averageScore.compareTo(a.averageScore));
+      _classRankings = List.generate(filteredRaw.length, (index) {
+        final original = filteredRaw[index];
         return PiketDayRanking(
           rank: index + 1,
           dayOfWeek: original.dayOfWeek,

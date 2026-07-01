@@ -74,7 +74,12 @@ class SmartCheckViewModel extends ChangeNotifier {
   };
   Map<String, double> get weeklyScores => _weeklyScores;
 
-  bool get canUpload => _isInsideGeofence && _isWithinTimeWindow && !_isHoliday && _isOnDutyToday && !_isAlreadySubmittedToday;
+  bool get canUpload =>
+      _isInsideGeofence &&
+      _isWithinTimeWindow &&
+      !_isHoliday &&
+      _isOnDutyToday &&
+      !_isAlreadySubmittedToday;
 
   Future<void> loadStatusAndConfig(String token) async {
     _isLoading = true;
@@ -91,8 +96,10 @@ class SmartCheckViewModel extends ChangeNotifier {
       final holidays = await _apiService.getHolidays(token);
 
       // 2. Get Student's Piket Team for today from verify API
-      _todayDayName = DateFormat('EEEE').format(DateTime.now()); // e.g. "Monday"
-      
+      _todayDayName = DateFormat(
+        'EEEE',
+      ).format(DateTime.now()); // e.g. "Monday"
+
       try {
         _myPiketTeam = await _apiService.verifyPiketToday(token);
         final studentProfile = await _apiService.getStudentProfile(token);
@@ -100,7 +107,9 @@ class SmartCheckViewModel extends ChangeNotifier {
         final currentId = studentProfile.id;
 
         if (_myPiketTeam != null) {
-          _isOnDutyToday = _myPiketTeam!.members.any((m) => m.nis == currentNis || m.id == currentId);
+          _isOnDutyToday = _myPiketTeam!.members.any(
+            (m) => m.nis == currentNis || m.id == currentId,
+          );
         } else {
           _isOnDutyToday = false;
         }
@@ -128,18 +137,23 @@ class SmartCheckViewModel extends ChangeNotifier {
         final startParts = _settings!.startTime.split(':');
         final endParts = _settings!.endTime.split(':');
         if (startParts.length >= 2 && endParts.length >= 2) {
-          final startMin = int.parse(startParts[0]) * 60 + int.parse(startParts[1]);
+          final startMin =
+              int.parse(startParts[0]) * 60 + int.parse(startParts[1]);
           final endMin = int.parse(endParts[0]) * 60 + int.parse(endParts[1]);
           final nowMin = now.hour * 60 + now.minute;
           _isWithinTimeWindow = nowMin >= startMin && nowMin <= endMin;
         }
       }
 
-      // 5. Verify Holiday / Sunday (Sunday is not holiday if student is scheduled to picket today)
+      // 5. Verify Holiday / Weekend (Weekend is holiday)
       final todayDateStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
-      final isSunday = DateTime.now().weekday == DateTime.sunday;
-      final isHolidayRegistered = holidays.any((h) => h['date'] == todayDateStr);
-      _isHoliday = isHolidayRegistered || (isSunday && !_isOnDutyToday);
+      final isWeekend =
+          DateTime.now().weekday == DateTime.saturday ||
+          DateTime.now().weekday == DateTime.sunday;
+      final isHolidayRegistered = holidays.any(
+        (h) => h['date'] == todayDateStr,
+      );
+      _isHoliday = isHolidayRegistered || (isWeekend && !_isOnDutyToday);
 
       // 6. Fetch schedules to map team members in history
       try {
@@ -164,9 +178,9 @@ class SmartCheckViewModel extends ChangeNotifier {
         _isAlreadySubmittedToday = false;
         _submittedByName = null;
       }
-
     } catch (e) {
-      _errorMessage = 'Gagal memuat status & konfigurasi: ${e.toString().replaceAll('Exception: ', '')}';
+      _errorMessage =
+          'Gagal memuat status & konfigurasi: ${e.toString().replaceAll('Exception: ', '')}';
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -182,15 +196,21 @@ class SmartCheckViewModel extends ChangeNotifier {
       final currentWeekday = now.weekday; // 1 = Monday, 7 = Sunday
       final startOfWeek = now.subtract(Duration(days: currentWeekday - 1));
       // Zero out time
-      final monday = DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day);
-      final sunday = monday.add(const Duration(days: 6, hours: 23, minutes: 59, seconds: 59));
+      final monday = DateTime(
+        startOfWeek.year,
+        startOfWeek.month,
+        startOfWeek.day,
+      );
+      final sunday = monday.add(
+        const Duration(days: 6, hours: 23, minutes: 59, seconds: 59),
+      );
 
       // Filter submissions for this week
       _weeklySubmissions = allSubmissions.where((sub) {
         try {
           final subDate = DateTime.parse(sub.date);
           return subDate.isAfter(monday.subtract(const Duration(seconds: 1))) &&
-                 subDate.isBefore(sunday.add(const Duration(seconds: 1)));
+              subDate.isBefore(sunday.add(const Duration(seconds: 1)));
         } catch (_) {
           return false;
         }
@@ -250,7 +270,7 @@ class SmartCheckViewModel extends ChangeNotifier {
         imageQuality: 80,
         maxWidth: 1080,
       );
-      
+
       if (images.isNotEmpty) {
         _selectedImages.addAll(images);
         if (_selectedImages.length > 5) {
@@ -273,7 +293,7 @@ class SmartCheckViewModel extends ChangeNotifier {
         imageQuality: 80,
         maxWidth: 1080,
       );
-      
+
       if (image != null) {
         if (_selectedImages.length >= 5) {
           return 'Maksimal foto yang dapat diunggah adalah 5.';
@@ -307,7 +327,9 @@ class SmartCheckViewModel extends ChangeNotifier {
     try {
       final position = await locator.locationService.getCurrentPosition();
       if (position == null) {
-        throw Exception('Gagal mendapatkan lokasi GPS Anda. Aktifkan GPS Anda.');
+        throw Exception(
+          'Gagal mendapatkan lokasi GPS Anda. Aktifkan GPS Anda.',
+        );
       }
 
       final imagePaths = _selectedImages.map((img) => img.path).toList();

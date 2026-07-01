@@ -54,7 +54,7 @@ class _StudentDashboardState extends State<StudentDashboard>
           });
         },
       ),
-      const CleanRankScreen(),
+      const SizedBox(), // CleanRankScreen is now pushed as a separate page
       const ProfileScreen(),
     ];
 
@@ -103,9 +103,7 @@ class _StudentDashboardState extends State<StudentDashboard>
     final user = auth.user;
 
     if (user == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return MultiProvider(
@@ -133,7 +131,11 @@ class _StudentDashboardState extends State<StudentDashboard>
         builder: (context, statusVm, dashVm, child) {
           return Scaffold(
             backgroundColor: const Color(0xFFF8FAF8),
-            appBar: (_currentIndex == 0 || _currentIndex == 2 || _currentIndex == 3 || _currentIndex == 4)
+            appBar:
+                (_currentIndex == 0 ||
+                    _currentIndex == 2 ||
+                    _currentIndex == 3 ||
+                    _currentIndex == 4)
                 ? null
                 : AppBar(
                     title: Column(
@@ -141,11 +143,17 @@ class _StudentDashboardState extends State<StudentDashboard>
                       children: [
                         Text(
                           _getTitle(),
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         Text(
                           '${user.name} • Kelas ${user.className ?? "-"}',
-                          style: const TextStyle(fontSize: 13, color: Colors.white70),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Colors.white70,
+                          ),
                         ),
                       ],
                     ),
@@ -160,7 +168,11 @@ class _StudentDashboardState extends State<StudentDashboard>
     );
   }
 
-  Widget _buildHomeDashboard(dynamic user, SmartCheckViewModel statusVm, DashboardViewModel dashVm) {
+  Widget _buildHomeDashboard(
+    dynamic user,
+    SmartCheckViewModel statusVm,
+    DashboardViewModel dashVm,
+  ) {
     final initials = user.name.isNotEmpty
         ? user.name.split(' ').map((e) => e[0]).take(2).join().toUpperCase()
         : 'ST';
@@ -259,7 +271,14 @@ class _StudentDashboardState extends State<StudentDashboard>
                         child: _buildQuickActionCard(
                           icon: Icons.bar_chart_rounded,
                           title: 'Peringkat',
-                          onTap: () => _setPage(3),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const CleanRankScreen(),
+                              ),
+                            );
+                          },
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -272,10 +291,13 @@ class _StudentDashboardState extends State<StudentDashboard>
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => ChangeNotifierProvider<DashboardViewModel>.value(
-                                  value: dashVm,
-                                  child: const PiketScheduleScreen(),
-                                ),
+                                builder: (context) =>
+                                    ChangeNotifierProvider<
+                                      DashboardViewModel
+                                    >.value(
+                                      value: dashVm,
+                                      child: const PiketScheduleScreen(),
+                                    ),
                               ),
                             );
                           },
@@ -306,7 +328,8 @@ class _StudentDashboardState extends State<StudentDashboard>
                     children: [
                       _buildFeatureCardWithImage(
                         title: 'Kirimkan Foto Kelas Anda',
-                        subtitle: 'Setor pengerjaan piket anda dan dapatkan penilaian!',
+                        subtitle:
+                            'Setor pengerjaan piket anda dan dapatkan penilaian!',
                         buttonText: 'Klik disini',
                         imagePath: 'assets/images/dummy.png',
                         onTap: () => _setPage(2),
@@ -316,7 +339,8 @@ class _StudentDashboardState extends State<StudentDashboard>
                       const SizedBox(height: 16),
                       _buildFeatureCardWithImage(
                         title: 'PRABA AI',
-                        subtitle: 'Tanya seputar lingkungan pada PRABA sekarang!',
+                        subtitle:
+                            'Tanya seputar lingkungan pada PRABA sekarang!',
                         buttonText: 'Coba sekarang!',
                         imagePath: 'assets/images/dummy.png',
                         onTap: () => _setPage(1),
@@ -494,19 +518,21 @@ class _StudentDashboardState extends State<StudentDashboard>
 
   Widget _buildGeofenceCard(SmartCheckViewModel statusVm) {
     final bool isInsideSchool = statusVm.isInsideGeofence;
-    final String distanceStr = statusVm.distance != null 
-        ? '${statusVm.distance!.toStringAsFixed(0)}m' 
+    final String distanceStr = statusVm.distance != null
+        ? '${statusVm.distance!.toStringAsFixed(0)}m'
         : '-m';
 
-    final Color statusColor = isInsideSchool ? AppColors.success : AppColors.error;
+    final Color statusColor = isInsideSchool
+        ? AppColors.success
+        : AppColors.error;
     final IconData statusIcon = isInsideSchool
         ? Icons.location_on_rounded
         : Icons.location_off_rounded;
     final String statusText = statusVm.isLoading
         ? 'Mengecek lokasi...'
         : (isInsideSchool
-            ? 'Di dalam sekolah'
-            : 'Di luar sekolah ($distanceStr)');
+              ? 'Di dalam sekolah'
+              : 'Di luar sekolah ($distanceStr)');
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -576,8 +602,8 @@ class _StudentDashboardState extends State<StudentDashboard>
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                statusVm.isLoading 
-                    ? Icons.sync 
+                statusVm.isLoading
+                    ? Icons.sync
                     : (isInsideSchool ? Icons.check : Icons.refresh),
                 color: statusColor,
                 size: 18,
@@ -588,8 +614,6 @@ class _StudentDashboardState extends State<StudentDashboard>
       ),
     );
   }
-
-
 
   // ─── NOTCH NAVBAR: EXACTLY like reference photo ───
   Widget _buildNotchNavBar() {
@@ -672,19 +696,20 @@ class _StudentDashboardState extends State<StudentDashboard>
                               stops: [0.0, 0.5, 1.0],
                             ),
                             shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white,
-                              width: 5,
-                            ),
+                            border: Border.all(color: Colors.white, width: 5),
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.primaryGreen.withValues(alpha: 0.3),
+                                color: AppColors.primaryGreen.withValues(
+                                  alpha: 0.3,
+                                ),
                                 blurRadius: 10,
                                 offset: const Offset(0, 5),
                                 spreadRadius: 1,
                               ),
                               BoxShadow(
-                                color: AppColors.primaryLight.withValues(alpha: 0.2),
+                                color: AppColors.primaryLight.withValues(
+                                  alpha: 0.2,
+                                ),
                                 blurRadius: 20,
                                 offset: const Offset(0, 0),
                                 spreadRadius: 4,
@@ -767,10 +792,7 @@ class _NotchNavbarPainter extends CustomPainter {
   final Color bgColor;
   final Color shadowColor;
 
-  _NotchNavbarPainter({
-    required this.bgColor,
-    required this.shadowColor,
-  });
+  _NotchNavbarPainter({required this.bgColor, required this.shadowColor});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -787,8 +809,10 @@ class _NotchNavbarPainter extends CustomPainter {
     shadowPath.quadraticBezierTo(0, 0, cornerRadius, 0);
     shadowPath.lineTo(notchCenter - notchRadius - 15, 0);
     shadowPath.quadraticBezierTo(
-      notchCenter - notchRadius, 0,
-      notchCenter - notchRadius + 5, 8,
+      notchCenter - notchRadius,
+      0,
+      notchCenter - notchRadius + 5,
+      8,
     );
     shadowPath.arcToPoint(
       Offset(notchCenter + notchRadius - 5, 8),
@@ -796,8 +820,10 @@ class _NotchNavbarPainter extends CustomPainter {
       clockwise: false,
     );
     shadowPath.quadraticBezierTo(
-      notchCenter + notchRadius, 0,
-      notchCenter + notchRadius + 15, 0,
+      notchCenter + notchRadius,
+      0,
+      notchCenter + notchRadius + 15,
+      0,
     );
     shadowPath.lineTo(width - cornerRadius, 0);
     shadowPath.quadraticBezierTo(width, 0, width, cornerRadius);
@@ -819,8 +845,10 @@ class _NotchNavbarPainter extends CustomPainter {
     path.quadraticBezierTo(0, 0, cornerRadius, 0);
     path.lineTo(notchCenter - notchRadius - 10, 0);
     path.quadraticBezierTo(
-      notchCenter - notchRadius, 0,
-      notchCenter - notchRadius + 5, 6,
+      notchCenter - notchRadius,
+      0,
+      notchCenter - notchRadius + 5,
+      6,
     );
     path.arcToPoint(
       Offset(notchCenter + notchRadius - 5, 6),
@@ -828,8 +856,10 @@ class _NotchNavbarPainter extends CustomPainter {
       clockwise: false,
     );
     path.quadraticBezierTo(
-      notchCenter + notchRadius, 0,
-      notchCenter + notchRadius + 10, 0,
+      notchCenter + notchRadius,
+      0,
+      notchCenter + notchRadius + 10,
+      0,
     );
     path.lineTo(width - cornerRadius, 0);
     path.quadraticBezierTo(width, 0, width, cornerRadius);
