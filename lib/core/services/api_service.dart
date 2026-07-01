@@ -35,8 +35,7 @@ class ApiService {
       key = 'nis';
     }
 
-    final endpoint = (key == 'nis') ? '/student/login' : '/teacher/login';
-    final url = AppConfig.buildUrl(endpoint);
+    final url = AppConfig.buildUrl('/login');
 
     final response = await locator.httpService.post(
       url,
@@ -83,7 +82,12 @@ class ApiService {
     );
 
     if (response.statusCode == 200) {
-      return User.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+      final data = jsonDecode(response.body);
+      // Backend wraps response in {user: {...}}
+      final userData = data is Map && data.containsKey('user')
+          ? data['user'] as Map<String, dynamic>
+          : data as Map<String, dynamic>;
+      return User.fromJson(userData);
     } else {
       throw Exception('Gagal mengambil profil.');
     }
@@ -173,8 +177,10 @@ class ApiService {
   }
 
   /// Get monthly class scores history.
+  /// Uses /rankings?interval=monthly since /monthly-class-scores doesn't exist.
   Future<List<MonthlyClassScore>> getMonthlyClassScores(String token) async {
-    final url = AppConfig.buildUrl('/monthly-class-scores');
+    final now = DateTime.now();
+    final url = AppConfig.buildUrl('/rankings?interval=monthly&year=${now.year}&month=${now.month}');
     final headers = _getHeaders(token);
     headers['Cache-Control'] = 'no-cache';
     final response = await locator.httpService.get(
@@ -256,6 +262,8 @@ class ApiService {
   }
 
   /// Get classroom piket schedules.
+  /// Backend /schedule returns [{class_id, class_name, teams: [{day_of_week, student_id, student_name, student_nis}]}]
+  /// We flatten this into a list of PiketTeam grouped by day.
   Future<List<PiketTeam>> getSchedules(String token) async {
     final url = AppConfig.buildUrl('/schedule');
     final response = await locator.httpService.get(
@@ -264,10 +272,48 @@ class ApiService {
     );
 
     if (response.statusCode == 200) {
-      final List<dynamic> list = jsonDecode(response.body) as List<dynamic>;
-      return list
-          .map((item) => PiketTeam.fromJson(item as Map<String, dynamic>))
-          .toList();
+      final List<dynamic> classList = jsonDecode(response.body) as List<dynamic>;
+      final List<PiketTeam> result = [];
+
+      for (final classData in classList) {
+        final classMap = classData as Map<String, dynamic>;
+        final classId = classMap['class_id'];
+        final className = classMap['class_name']?.toString() ?? '';
+        final teams = classMap['teams'] as List<dynamic>? ?? [];
+
+        // Group team entries by day_of_week
+        final Map<String, List<PiketTeamMember>> dayGroups = {};
+        for (final entry in teams) {
+          final entryMap = entry as Map<String, dynamic>;
+          final day = entryMap['day_of_week']?.toString() ?? '';
+          dayGroups.putIfAbsent(day, () => []);
+          if (entryMap['student_id'] != null) {
+            dayGroups[day]!.add(PiketTeamMember(
+              id: entryMap['student_id'] is int
+                  ? entryMap['student_id']
+                  : int.tryParse(entryMap['student_id'].toString()) ?? 0,
+              name: entryMap['student_name']?.toString() ?? '',
+              nis: entryMap['student_nis']?.toString(),
+            ));
+          }
+        }
+
+        // Create a PiketTeam for each day
+        int teamIndex = 0;
+        for (final entry in dayGroups.entries) {
+          result.add(PiketTeam(
+            id: (classId is int ? classId : 0) * 100 + teamIndex,
+            name: '$className - ${entry.key}',
+            day: entry.key,
+            classId: classId is int ? classId : int.tryParse(classId.toString()),
+            className: className,
+            members: entry.value,
+          ));
+          teamIndex++;
+        }
+      }
+
+      return result;
     } else {
       throw Exception('Gagal mengambil jadwal piket.');
     }
@@ -315,8 +361,9 @@ class ApiService {
   }
 
   /// Get today's scheduled picket verification details (student).
+  /// Uses /schedule/my-team since /piket/today-duty doesn't exist.
   Future<PiketTeam> verifyPiketToday(String token) async {
-    final url = AppConfig.buildUrl('/piket/today-duty');
+    final url = AppConfig.buildUrl('/schedule/my-team');
     final response = await locator.httpService.get(
       url,
       headers: _getHeaders(token),
@@ -324,26 +371,57 @@ class ApiService {
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
-      return PiketTeam.fromJson(data);
+      final classId = data['class_id'];
+      final className = data['class_name']?.toString() ?? '';
+      final teams = data['teams'] as List<dynamic>? ?? [];
+
+      // Filter today's team members
+      final todayEnglish = DateFormat('EEEE').format(DateTime.now());
+      final todayMembers = <PiketTeamMember>[];
+      for (final entry in teams) {
+        final entryMap = entry as Map<String, dynamic>;
+        if (entryMap['day_of_week']?.toString().toLowerCase() == todayEnglish.toLowerCase()) {
+          if (entryMap['student_id'] != null) {
+            todayMembers.add(PiketTeamMember(
+              id: entryMap['student_id'] is int
+                  ? entryMap['student_id']
+                  : int.tryParse(entryMap['student_id'].toString()) ?? 0,
+              name: entryMap['student_name']?.toString() ?? '',
+              nis: entryMap['student_nis']?.toString(),
+            ));
+          }
+        }
+      }
+
+      return PiketTeam(
+        id: classId is int ? classId : int.tryParse(classId.toString()) ?? 0,
+        name: '$className - $todayEnglish',
+        day: todayEnglish,
+        classId: classId is int ? classId : int.tryParse(classId.toString()),
+        className: className,
+        members: todayMembers,
+      );
     } else {
       throw Exception('Gagal memverifikasi jadwal piket hari ini.');
     }
   }
 
   /// Get current student profile details.
+  /// Uses /me since /student/profile doesn't exist.
   Future<User> getStudentProfile(String token) async {
-    final url = AppConfig.buildUrl('/student/profile');
+    final url = AppConfig.buildUrl('/me');
     final response = await locator.httpService.get(
       url,
       headers: _getHeaders(token),
     );
 
     if (response.statusCode == 200) {
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
-      return User.fromJson({
-        ...json,
-        'role': 'student',
-      });
+      final data = jsonDecode(response.body);
+      // Backend wraps response in {user: {...}}
+      final userData = data is Map && data.containsKey('user')
+          ? data['user'] as Map<String, dynamic>
+          : data as Map<String, dynamic>;
+      return User.fromJson(userData);
     } else {
       throw Exception('Gagal mengambil profil siswa.');
     }
@@ -466,8 +544,9 @@ class ApiService {
   }
 
   /// Get today's duty students (properly parsed).
+  /// Derives from /schedule/my-team since /piket/today-duty doesn't exist.
   Future<TodayDuty?> getTodayDuty(String token) async {
-    final url = AppConfig.buildUrl('/piket/today-duty');
+    final url = AppConfig.buildUrl('/schedule/my-team');
     final response = await locator.httpService.get(
       url,
       headers: _getHeaders(token),
@@ -476,7 +555,35 @@ class ApiService {
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       if (data == null || (data is Map && data.isEmpty)) return null;
-      return TodayDuty.fromJson(data as Map<String, dynamic>);
+
+      final scheduleData = data as Map<String, dynamic>;
+      final teams = scheduleData['teams'] as List<dynamic>? ?? [];
+      final todayEnglish = DateFormat('EEEE').format(DateTime.now());
+
+      // Filter entries for today
+      final todayStudents = <DutyStudent>[];
+      for (final entry in teams) {
+        final entryMap = entry as Map<String, dynamic>;
+        if (entryMap['day_of_week']?.toString().toLowerCase() == todayEnglish.toLowerCase()) {
+          if (entryMap['student_id'] != null) {
+            todayStudents.add(DutyStudent(
+              id: entryMap['student_id'] is int
+                  ? entryMap['student_id']
+                  : int.tryParse(entryMap['student_id'].toString()) ?? 0,
+              nis: entryMap['student_nis']?.toString() ?? '',
+              name: entryMap['student_name']?.toString() ?? '',
+            ));
+          }
+        }
+      }
+
+      return TodayDuty(
+        dayOfWeek: todayEnglish,
+        students: todayStudents,
+      );
+    } else if (response.statusCode == 403) {
+      // Not a student, return null gracefully
+      return null;
     } else {
       throw Exception('Gagal mengambil jadwal piket hari ini.');
     }
