@@ -203,7 +203,7 @@ class OnnxPredictor {
         throw ArgumentError("Failed to decode image at $imagePath");
       }
 
-      final img.Image resized = img.copyResize(decoded, width: 224, height: 224);
+      final img.Image resized = img.copyResize(decoded, width: 224, height: 224, interpolation: img.Interpolation.linear);
 
       final Float32List inputData = Float32List(1 * 3 * 224 * 224);
       final int size = 224 * 224;
