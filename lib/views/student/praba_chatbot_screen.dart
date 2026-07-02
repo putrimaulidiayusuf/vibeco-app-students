@@ -39,7 +39,7 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
       } else {
         // Welcome message
         _addAiMessage(
-          "Halo! Saya **PRABA AI**, Asisten Cerdas Kebersihan VibeCo.\n\n"
+          "Halo! Saya **PRABA AI**, Asisten Cerdas Kebersihan ZieClean.\n\n"
           "Kirimkan foto sampah dari **Kamera Pemindai** (real-time) atau **Galeri** Anda untuk mengetahui kategori sampah, cara membuang, dampak lingkungan, serta cara mendaur ulangnya!"
         );
       }
@@ -226,7 +226,7 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
       if (lower.contains("halo") || lower.contains("hai")) {
         reply = "Halo! Ada yang bisa saya bantu hari ini? Silakan kirimkan foto sampah Anda agar saya bisa mendeteksinya.";
       } else if (lower.contains("siapa") || lower.contains("praba")) {
-        reply = "Saya adalah *PRABA AI*, asisten kebersihan VibeCo Anda. Saya dilatih untuk mendeteksi 7 jenis sampah menggunakan model AI secara lokal di perangkat Anda.";
+        reply = "Saya adalah **PRABA AI**, asisten kebersihan ZieClean Anda. Saya dilatih untuk mendeteksi 7 jenis sampah menggunakan model AI secara lokal di perangkat Anda.";
       } else if (lower.contains("bersih") || lower.contains("piket")) {
         reply = "Untuk menjaga kebersihan kelas, pastikan Anda menyapu lantai, merapikan meja, dan membuang sampah sesuai dengan tempat pembuangan yang benar.";
       } else {
@@ -260,7 +260,7 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
               final prefs = await SharedPreferences.getInstance();
               await prefs.remove('praba_chat_history');
               _addAiMessage(
-                "Halo! Saya *PRABA AI*, Asisten Cerdas Kebersihan VibeCo.\n\n"
+                "Halo! Saya **PRABA AI**, Asisten Cerdas Kebersihan ZieClean.\n\n"
                 "Kirimkan foto sampah dari **Kamera Pemindai** atau **Galeri** Anda untuk mendeteksi kategori dan mendapatkan panduan pengolahannya!"
               );
             },
@@ -274,215 +274,80 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAF8),
-      // resizeToAvoidBottomInset true supaya chat tidak tertumpuk keyboard
-      resizeToAvoidBottomInset: true,
-      body: Column(
-        children: [
-          // ─── PREMIUM GRADIENT HEADER ───
-          Container(
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF0F4D3A), Color(0xFF06241B)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(32),
-                bottomRight: Radius.circular(32),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Color(0xFF06241B),
-                  blurRadius: 20,
-                  offset: Offset(0, 8),
-                ),
-              ],
+      appBar: AppBar(
+        title: const Row(
+          children: [
+            Icon(Icons.auto_awesome, color: Colors.white),
+            SizedBox(width: 8),
+            Text(
+              "PRABA AI Chat Bot",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 18, 20, 22),
-                child: Row(
-                  children: [
-                    // Back Button
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(14),
-                        onTap: () => Navigator.pop(context),
-                        child: Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.2),
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.arrow_back_ios_new_rounded,
-                            color: Colors.white,
-                            size: 18,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-
-                    // Title & online indicator
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Asisten Cerdas Kebersihan',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                              letterSpacing: 0.3,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
-                          ),
-                          SizedBox(height: 3),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.circle, color: Color(0xFF4ADE80), size: 8),
-                              SizedBox(width: 5),
-                              Text(
-                                'Online · Siap membantu',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.white60,
-                                  letterSpacing: 0.2,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Clear chat action
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(12),
-                        onTap: _clearChat,
-                        child: Container(
-                          padding: const EdgeInsets.all(9),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.2),
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.delete_sweep_rounded,
-                            color: Colors.white,
-                            size: 18,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // ─── CHAT BODY ───
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    AppTheme.primaryGreen.withValues(alpha: 0.04),
-                    Colors.white,
-                  ],
-                ),
-              ),
-              child: Column(
-                children: [
-                  Expanded(
-                    child: ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
-                      itemCount: _messages.length,
-                      itemBuilder: (context, index) {
-                        final msg = _messages[index];
-                        return _buildMessageItem(msg);
-                      },
-                    ),
-                  ),
-
-                  if (_isAiResponding)
-                    Container(
-                      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.04),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          SizedBox(
-                            width: 28,
-                            height: 28,
-                            child: ClipOval(
-                              child: Transform.scale(
-                                scale: 1.0,
-                                child: Image.asset(
-                                  'assets/images/maskotprofil.png',
-                                  fit: BoxFit.cover,
-                                  alignment: const Alignment(0, -0.2),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          const SizedBox(
-                            width: 14,
-                            height: 14,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryGreen),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            " PRABA Sedang menganalisis...",
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
-                              fontSize: 13,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                  _buildInputBar(),
-                ],
-              ),
-            ),
+          ],
+        ),
+        backgroundColor: AppTheme.primaryGreen,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete_sweep_rounded),
+            tooltip: "Hapus Chat",
+            onPressed: _clearChat,
           ),
         ],
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              AppTheme.primaryGreen.withValues(alpha: 0.05),
+              Colors.white,
+            ],
+          ),
+        ),
+        child: Column(
+          children: [
+            // Chat message list
+            Expanded(
+              child: ListView.builder(
+                controller: _scrollController,
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
+                itemCount: _messages.length,
+                itemBuilder: (context, index) {
+                  final msg = _messages[index];
+                  return _buildMessageItem(msg);
+                },
+              ),
+            ),
+
+            if (_isAiResponding)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+                child: Row(
+                  children: [
+                    const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryGreen),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      "PRABA AI sedang menganalisis...",
+                      style: TextStyle(color: Colors.grey.shade600, fontSize: 13, fontStyle: FontStyle.italic),
+                    ),
+                  ],
+                ),
+              ),
+
+            // Bottom input bar
+            _buildInputBar(),
+          ],
+        ),
       ),
     );
   }
@@ -494,58 +359,35 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
     final Map<String, dynamic>? pred = msg['prediction'];
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
         mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isUser) ...[
-            // AI mascot avatar
             Container(
-              width: 36,
-              height: 36,
-              margin: const EdgeInsets.only(right: 8, bottom: 2),
-              decoration: BoxDecoration(
+              padding: const EdgeInsets.all(6),
+              decoration: const BoxDecoration(
+                color: AppTheme.primaryGreen,
                 shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.primaryGreen.withValues(alpha: 0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
               ),
-              child: ClipOval(
-                child: Transform.scale(
-                  scale: 1.25,
-                  child: Image.asset(
-                    'assets/images/maskotprofil.png',
-                    fit: BoxFit.cover,
-                    alignment: Alignment.topCenter,
-                  ),
-                ),
-              ),
+              child: const Icon(Icons.auto_awesome, size: 16, color: Colors.white),
             ),
+            const SizedBox(width: 8),
           ],
           Flexible(
             child: Column(
               crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: [
+                // Render image if present
                 if (imagePath != null && imagePath.isNotEmpty)
                   Container(
                     margin: const EdgeInsets.only(bottom: 6),
                     width: 200,
                     height: 150,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.grey.shade200, width: 1.5),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade300),
                       image: DecorationImage(
                         image: FileImage(File(imagePath)),
                         fit: BoxFit.cover,
@@ -553,29 +395,23 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
                     ),
                   ),
 
+                // Render chat bubble text
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
-                    gradient: isUser
-                        ? const LinearGradient(
-                            colors: [Color(0xFF0F4D3A), Color(0xFF1B6B4A)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          )
-                        : null,
-                    color: isUser ? null : Colors.white,
+                    color: isUser 
+                        ? AppTheme.primaryGreen 
+                        : Colors.white,
                     borderRadius: BorderRadius.only(
-                      topLeft: const Radius.circular(18),
-                      topRight: const Radius.circular(18),
-                      bottomLeft: isUser ? const Radius.circular(18) : const Radius.circular(4),
-                      bottomRight: isUser ? const Radius.circular(4) : const Radius.circular(18),
+                      topLeft: const Radius.circular(16),
+                      topRight: const Radius.circular(16),
+                      bottomLeft: isUser ? const Radius.circular(16) : Radius.zero,
+                      bottomRight: isUser ? Radius.zero : const Radius.circular(16),
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: isUser
-                            ? const Color(0xFF0F4D3A).withValues(alpha: 0.2)
-                            : Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 8,
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 6,
                         offset: const Offset(0, 3),
                       ),
                     ],
@@ -585,11 +421,12 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
                     style: TextStyle(
                       color: isUser ? Colors.white : AppTheme.primaryDark,
                       fontSize: 14.5,
-                      height: 1.45,
+                      height: 1.4,
                     ),
                   ),
                 ),
 
+                // If prediction details are attached, render waste intelligence cards
                 if (pred != null) ...[
                   const SizedBox(height: 8),
                   _buildIntelligenceCard(pred),
@@ -598,27 +435,14 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
             ),
           ),
           if (isUser) ...[
-            // User avatar
+            const SizedBox(width: 8),
             Container(
-              width: 34,
-              height: 34,
-              margin: const EdgeInsets.only(left: 8, bottom: 2),
+              padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF0F4D3A), Color(0xFF1B6B4A)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                color: Colors.grey.shade300,
                 shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.primaryGreen.withValues(alpha: 0.2),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
               ),
-              child: const Icon(Icons.person_rounded, size: 18, color: Colors.white),
+              child: const Icon(Icons.person, size: 16, color: Colors.black54),
             ),
           ],
         ],
@@ -630,47 +454,38 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
     return Container(
       width: double.infinity,
       constraints: const BoxConstraints(maxHeight: 400),
-      margin: const EdgeInsets.only(top: 8, bottom: 4),
+      margin: const EdgeInsets.only(top: 8, bottom: 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppTheme.primaryGreen.withValues(alpha: 0.15)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF0F4D3A), Color(0xFF1B6B4A)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
+                color: AppTheme.surfaceGreen,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: Row(
                   children: [
-                    const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 18),
+                    const Icon(Icons.info_outline, color: AppTheme.primaryGreen, size: 20),
                     const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        "Analisis: ${pred['class_name']}",
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                    Text(
+                      "Analisis Informasi Sampah: ${pred['class_name']}",
+                      style: const TextStyle(
+                        color: AppTheme.primaryGreen,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
                       ),
                     ),
                   ],
@@ -686,21 +501,21 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
                       pred['disposal'] ?? "N/A",
                       Colors.blue.shade700,
                     ),
-                    const Divider(height: 22),
+                    const Divider(height: 24),
                     _buildIntelligenceRow(
                       Icons.nature_people_outlined,
                       "Dampak Lingkungan",
                       pred['impact'] ?? "N/A",
                       Colors.red.shade700,
                     ),
-                    const Divider(height: 22),
+                    const Divider(height: 24),
                     _buildIntelligenceRow(
                       Icons.autorenew,
                       "Ide Daur Ulang",
                       pred['recycling'] ?? "N/A",
                       Colors.green.shade700,
                     ),
-                    const Divider(height: 22),
+                    const Divider(height: 24),
                     _buildIntelligenceRow(
                       Icons.tips_and_updates_outlined,
                       "Tips Tambahan",
@@ -725,9 +540,9 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(icon, size: 18, color: color),
+          child: Icon(icon, size: 20, color: color),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -738,7 +553,7 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
                 title,
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 12,
+                  fontSize: 13,
                   color: Colors.black54,
                 ),
               ),
@@ -746,7 +561,7 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
               Text(
                 value,
                 style: const TextStyle(
-                  fontSize: 13.5,
+                  fontSize: 14,
                   color: AppTheme.primaryDark,
                   height: 1.4,
                 ),
@@ -760,151 +575,49 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
 
   Widget _buildInputBar() {
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 16,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 10.0),
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
       child: SafeArea(
-        top: false,
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            // Camera scanner button - menggunakan foto.png
-            GestureDetector(
-              onTap: _openCameraScanner,
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF0F4D3A), Color(0xFF1B6B4A)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF0F4D3A).withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Image.asset(
-                      'assets/images/foto.png',
-                      fit: BoxFit.contain,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
+            // Camera scanner button
+            IconButton(
+              icon: const Icon(Icons.qr_code_scanner_rounded, color: AppTheme.primaryGreen, size: 28),
+              tooltip: "Kamera Pemindai",
+              onPressed: _openCameraScanner,
             ),
-            const SizedBox(width: 8),
             // Gallery button
-            GestureDetector(
-              onTap: _pickFromGallery,
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryGreen.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: AppTheme.primaryGreen.withValues(alpha: 0.2),
-                  ),
-                ),
-                child: const Icon(
-                  Icons.photo_library_rounded,
-                  color: AppTheme.primaryGreen,
-                  size: 22,
-                ),
-              ),
+            IconButton(
+              icon: const Icon(Icons.photo_library_outlined, color: AppTheme.primaryGreen, size: 26),
+              tooltip: "Pilih Galeri",
+              onPressed: _pickFromGallery,
             ),
-            const SizedBox(width: 10),
-            // Text input
+            const SizedBox(width: 4),
+            // Text field input
             Expanded(
               child: Container(
-                constraints: const BoxConstraints(
-                  minHeight: 44,
-                  maxHeight: 120,
-                ),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(22),
-                  border: Border.all(
-                    color: Colors.grey.shade300,
-                  ),
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(24.0),
+                  border: Border.all(color: Colors.grey.shade200),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: TextField(
                   controller: _textController,
-                  maxLines: null,
-                  keyboardType: TextInputType.multiline,
-                  textInputAction: TextInputAction.newline,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     hintText: "Ketik pesan...",
-                    hintStyle: TextStyle(
-                      color: Colors.grey.shade400,
-                      fontSize: 14,
-                    ),
-                    filled: false,
                     border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    errorBorder: InputBorder.none,
-                    disabledBorder: InputBorder.none,
                     isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 10),
                   ),
-                  style: const TextStyle(
-                    fontSize: 14.5,
-                    color: AppTheme.primaryDark,
-                  ),
-                  onSubmitted: (val) {
-                    if (val.trim().isNotEmpty) _handleTextSubmitted(val);
-                  },
+                  onSubmitted: _handleTextSubmitted,
                 ),
               ),
             ),
             const SizedBox(width: 8),
             // Send button
-            GestureDetector(
-              onTap: () => _handleTextSubmitted(_textController.text),
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF0F4D3A), Color(0xFF1B6B4A)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF0F4D3A).withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.send_rounded,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
+            IconButton(
+              icon: const Icon(Icons.send_rounded, color: AppTheme.primaryGreen),
+              onPressed: () => _handleTextSubmitted(_textController.text),
             ),
           ],
         ),

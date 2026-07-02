@@ -1,177 +1,340 @@
 import 'dart:io';
 import 'dart:math';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_onnxruntime/flutter_onnxruntime.dart';
 import 'package:image/image.dart' as img;
 
-/// OnnxPredictor — Local waste-type inference engine.
-///
-/// Predicts waste category from an image file path using pixel-level
-/// image analysis (color histogram heuristics). Returns a structured
-/// result map compatible with PrabaChatBotScreen and CameraScannerScreen.
 class OnnxPredictor {
-  // ─── Supported waste categories ────────────────────────────────────────────
-  static const List<String> _classes = [
-    'Plastik',
-    'Kertas',
-    'Kaca',
-    'Logam',
-    'Organik',
-    'Kain',
-    'Lainnya',
+  static final OnnxPredictor _instance = OnnxPredictor._internal();
+  factory OnnxPredictor() => _instance;
+  OnnxPredictor._internal();
+
+  OrtSession? _session;
+  final List<String> _classNames = [
+    "glass",
+    "hazardous",
+    "metal",
+    "organic",
+    "paper",
+    "plastic",
+    "textile",
   ];
 
-  // ─── Per-category knowledge base ───────────────────────────────────────────
-  static const Map<String, Map<String, String>> _knowledge = {
-    'Plastik': {
-      'disposal': 'Buang di tempat sampah khusus plastik (berwarna kuning). Jangan dibakar karena menghasilkan gas beracun.',
-      'impact': 'Plastik membutuhkan 400–1000 tahun untuk terurai. Sangat berbahaya bagi ekosistem laut dan tanah.',
-      'recycling': 'Botol plastik bisa dijadikan pot tanaman, tempat pensil, atau dikirim ke bank sampah untuk didaur ulang menjadi bahan baku baru.',
-      'notes': 'Cuci bersih plastik bekas sebelum membuang agar tidak mencemari lingkungan dan mudah didaur ulang.',
+  // Diverse Responses Database (in Indonesian)
+  final Map<String, Map<String, List<String>>> _wasteInfoDb = {
+    "paper": {
+      "disposal": [
+        "Buang kertas bersih ke tempat sampah khusus kertas. Pastikan kering dan terbebas dari sisa makanan.",
+        "Masukkan kertas yang bersih ke dalam kotak daur ulang kertas. Hindari mencampurnya dengan sampah basah.",
+        "Tempatkan di tempat penampungan kertas daur ulang. Pastikan tidak ada minyak atau kuah sisa makanan ya!"
+      ],
+      "recycling": [
+        "Bisa didaur ulang menjadi kerajinan kertas buatan tangan (handmade paper), pembatas buku, kotak hiasan, atau kemasan ramah lingkungan.",
+        "Kertas bekas sangat bagus dibuat menjadi bubur kertas untuk kerajinan tangan, topeng karton, atau pot tanaman organik.",
+        "Dapat diolah kembali menjadi kertas baru, notes estetik, atau kantong belanja kertas (paper bag)."
+      ],
+      "impact": [
+        "Mendaur ulang kertas menghemat jutaan pohon di hutan, mengurangi konsumsi air bersih, dan menekan emisi gas rumah kaca secara signifikan.",
+        "Setiap ton kertas daur ulang menyelamatkan sekitar 17 pohon dewasa dan menghemat energi listrik yang besar.",
+        "Membantu mengurangi tumpukan sampah di TPA (Tempat Pemrosesan Akhir) dan menjaga paru-paru bumi."
+      ],
+      "notes": [
+        "Kertas yang kotor oleh minyak (seperti kardus pizza bekas atau kertas bungkus nasi) tidak bisa didaur ulang dan harus dibuang ke sampah organik.",
+        "Struk belanja thermal (menggunakan tinta kimia) sebaiknya dibuang ke tempat sampah umum/residu karena mengandung bahan BPA.",
+        "Selalu lepaskan staples, klip logam, atau selotip plastik sebelum menyalurkan kertas untuk didaur ulang."
+      ]
     },
-    'Kertas': {
-      'disposal': 'Buang di tempat sampah kertas (berwarna biru). Pastikan kertas tidak basah atau terkontaminasi makanan.',
-      'impact': 'Sampah kertas yang tidak didaur ulang berkontribusi pada penebangan hutan dan emisi karbon saat dibakar.',
-      'recycling': 'Kertas bekas bisa dibuat kerajinan origami, buku catatan baru, atau dijual ke pengepul untuk didaur ulang.',
-      'notes': 'Hindari mencampurkan kertas yang kotor atau berminyak dengan kertas bersih karena menyulitkan proses daur ulang.',
+    "metal": {
+      "disposal": [
+        "Bilas kaleng logam atau botol kaleng terlebih dahulu, lalu masukkan ke dalam tong sampah daur ulang logam/anorganik.",
+        "Bersihkan sisa isi kaleng logam dan buang ke wadah sampah khusus logam.",
+        "Masukkan ke tempat sampah kuning atau anorganik logam setelah dibilas bersih."
+      ],
+      "recycling": [
+        "Bisa didaur ulang 100% menjadi kaleng baru secara terus-menerus, atau dikreasikan menjadi tempat pensil, vas tanaman mini, dan dekorasi rumah.",
+        "Logam dapat dilebur kembali menjadi bahan baku konstruksi, peralatan rumah tangga, atau dekorasi gantungan kunci.",
+        "Dapat disalurkan ke bank sampah untuk dilebur ulang menjadi lembaran kaleng baru."
+      ],
+      "impact": [
+        "Mendaur ulang aluminium menghemat hingga 95% energi yang dibutuhkan untuk memproduksi logam baru dari bijih mentah tambang.",
+        "Sangat ramah lingkungan karena menekan polusi udara dan kerusakan alam akibat penambangan bauksit/besi.",
+        "Mengurangi emisi karbon secara drastis dibanding proses ekstraksi logam mentah."
+      ],
+      "notes": [
+        "Pastikan wadah aerosol (seperti semprotan parfum/obat nyamuk) sudah benar-benar kosong agar tidak memicu ledakan di tempat pemrosesan sampah.",
+        "Hindari mencampur tutup botol logam kecil ke dalam sampah plastik biasa agar mudah disortir magnetik.",
+        "Logam yang berkarat parah tetap dapat didaur ulang melalui proses peleburan industri."
+      ]
     },
-    'Kaca': {
-      'disposal': 'Buang di tempat sampah khusus kaca atau bungkus dengan koran sebelum dimasukkan ke tempat sampah agar tidak melukai.',
-      'impact': 'Kaca membutuhkan lebih dari 1 juta tahun untuk terurai secara alami di tempat pembuangan akhir.',
-      'recycling': 'Botol kaca dapat digunakan ulang sebagai tempat penyimpanan makanan atau dilebur menjadi produk kaca baru.',
-      'notes': 'Hati-hati saat menangani pecahan kaca. Gunakan sarung tangan untuk menghindari luka.',
+    "organic": {
+      "disposal": [
+        "Buang ke tempat sampah organik (hijau). Sampah ini akan terurai secara alami oleh mikroorganisme.",
+        "Tempatkan di tempat sampah sisa makanan/dedaunan untuk diolah lebih lanjut.",
+        "Masukkan ke wadah kompos mandiri di rumah atau tong sampah organik hijau."
+      ],
+      "recycling": [
+        "Sangat bagus diolah menjadi pupuk kompos alami, cairan eco-enzyme untuk pembersih ramah lingkungan, atau difermentasi menjadi biogas.",
+        "Dapat dibuat kompos penyubur tanaman pot, pupuk organik cair, atau pakan maggot black soldier fly (BSF).",
+        "Bisa diolah menjadi kompos padat untuk kebun sekolah atau pelet pupuk alami."
+      ],
+      "impact": [
+        "Mengurangi tumpukan sampah organik di TPA yang menjadi sumber gas metana penyebab efek rumah kaca.",
+        "Menyuburkan tanah sekolah secara alami dan mengembalikan nutrisi penting ke dalam ekosistem mikro.",
+        "Mencegah pencemaran air lindi sampah di pemukiman sekitar sekolah."
+      ],
+      "notes": [
+        "Jangan mencampurkan sisa daging berlemak atau produk olahan susu dalam jumlah besar ke kompos rumahan biasa karena bisa mengundang bau menyengat dan hama.",
+        "Pastikan tidak ada tusuk sate kayu tajam atau sisa bungkus plastik yang ikut terbuang ke sampah organik.",
+        "Dedaunan kering sangat bagus dicampur dengan sampah basah sisa buah untuk menyeimbangkan karbon nitrogen pupuk."
+      ]
     },
-    'Logam': {
-      'disposal': 'Buang di tempat sampah logam atau kumpulkan untuk dijual ke pengepul barang bekas.',
-      'impact': 'Penambangan logam baru sangat merusak lingkungan. Daur ulang logam menghemat hingga 95% energi dibanding produksi baru.',
-      'recycling': 'Kaleng aluminium bisa didaur ulang tanpa batas. Kumpulkan dan jual ke bank sampah atau pengepul.',
-      'notes': 'Pipihkan kaleng sebelum dibuang untuk menghemat ruang dan memudahkan pengangkutan.',
+    "hazardous": {
+      "disposal": [
+        "Bawa sampah B3 (Bahan Berbahaya dan Beracun) ke tempat pengumpulan khusus atau pos penampungan sampah elektronik terdekat.",
+        "Masukkan ke kotak pembuangan khusus baterai/bohlam bekas dan jauhkan dari jangkauan anak-anak.",
+        "Bungkus baterai/cairan kimia bocor dengan plastik tebal sebelum menyerahkannya ke petugas pengelola limbah khusus B3."
+      ],
+      "recycling": [
+        "Hanya dapat didaur ulang oleh industri berizin khusus untuk mengekstrak logam berharga dari sirkuit elektronik atau menetralisir racun.",
+        "Kerajinan mandiri tidak disarankan demi alasan keamanan kesehatan karena mengandung merkuri atau timbal.",
+        "Dapat diolah secara profesional untuk diambil kandungan nikel, litium, atau tembaga di dalam baterai bekas."
+      ],
+      "impact": [
+        "Mencegah zat berbahaya seperti timbal, merkuri, dan asam baterai merembes ke air tanah yang dapat meracuni sumber air minum warga.",
+        "Menghindari paparan racun langsung pada tanah sekitar sekolah yang bisa mematikan tanaman dan biota tanah.",
+        "Melindungi ekosistem sungai dan saluran drainase dari pencemaran zat kimia aktif berbahaya."
+      ],
+      "notes": [
+        "Baterai bekas, lampu LED/bohlam, obat-obatan kadaluarsa, botol racun serangga, dan termometer raksa adalah contoh limbah beracun B3.",
+        "JANGAN PERNAH membakar sampah B3 karena asap pembakarannya mengandung racun sangat berbahaya bagi sistem pernapasan manusia.",
+        "Jangan mencampur limbah B3 ke dalam tong sampah umum anorganik biasa demi keselamatan petugas kebersihan."
+      ]
     },
-    'Organik': {
-      'disposal': 'Buang di tempat sampah organik (berwarna hijau). Dapat dijadikan kompos untuk pupuk tanaman.',
-      'impact': 'Sampah organik yang membusuk di TPA menghasilkan gas metana, gas rumah kaca yang 25× lebih kuat dari CO₂.',
-      'recycling': 'Jadikan kompos atau pupuk cair dengan metode vermikomposting (pengomposan dengan cacing tanah).',
-      'notes': 'Pisahkan sisa makanan dari plastik pembungkus sebelum dibuang untuk mempermudah pengomposan.',
+    "textile": {
+      "disposal": [
+        "Kumpulkan pakaian layak pakai untuk disumbangkan. Pakaian robek/rusak disalurkan ke pos daur ulang kain.",
+        "Tempatkan baju bekas di drop box donasi pakaian atau pilah sebagai limbah tekstil.",
+        "Pisahkan pakaian bersih yang sudah tidak terpakai dari sampah rumah tangga basah."
+      ],
+      "recycling": [
+        "Dapat dikreasikan menjadi kain lap bersih, tas kain belanja (tote bag), sarung bantal patchwork (kain perca), atau boneka kain.",
+        "Kain katun bekas sangat bagus untuk kerajinan tali makrame, keset kaki rajutan, atau bantalan kursi santai.",
+        "Industri mendaur ulangnya menjadi serat benang baru untuk pakaian daur ulang atau bahan isolator panas."
+      ],
+      "impact": [
+        "Menekan limbah industri pakaian (fast fashion) yang merupakan salah satu pencemar lingkungan terbesar di dunia.",
+        "Menghemat air dalam jumlah sangat besar yang biasanya dipakai dalam proses produksi pewarnaan tekstil baru.",
+        "Mengurangi volume sampah kain sintetis di TPA yang sulit terurai secara alami."
+      ],
+      "notes": [
+        "Pastikan kain dalam kondisi bersih dan kering sebelum didaur ulang agar tidak menimbulkan jamur dan bau tidak sedap.",
+        "Gunting kancing plastik atau ritsleting logam dari baju bekas sebelum menggunakannya sebagai kain lap atau kerajinan perca.",
+        "Serat sintetis seperti polyester membutuhkan waktu ratusan tahun untuk hancur di alam bebas."
+      ]
     },
-    'Kain': {
-      'disposal': 'Buang di tempat sampah umum, atau donasikan ke panti asuhan/bank pakaian jika masih layak pakai.',
-      'impact': 'Industri fashion adalah salah satu penyumbang polusi air terbesar di dunia karena penggunaan zat kimia pewarna.',
-      'recycling': 'Kain bekas bisa dijahit menjadi tas belanja, lap dapur, atau kerajinan tangan bernilai jual.',
-      'notes': 'Sebelum membuang pakaian, pertimbangkan untuk menyumbangkannya kepada yang membutuhkan.',
+    "glass": {
+      "disposal": [
+        "Cuci bersih botol atau toples kaca, lalu masukkan ke dalam tong sampah daur ulang kaca/anorganik khusus.",
+        "Bersihkan sisa cairan di dalam botol kaca dan tempatkan di tempat pembuangan anorganik.",
+        "Kumpulkan toples kaca bersih ke dalam tempat sampah khusus kaca agar tidak bercampur sampah lainnya."
+      ],
+      "recycling": [
+        "Bisa didaur ulang tanpa batas waktu tanpa penurunan kualitas produk, atau digunakan kembali sebagai toples bumbu dapur, vas bunga, dan tempat lilin estetik.",
+        "Kaca dapat dicairkan kembali secara industri menjadi botol kaca baru atau diolah menjadi ubin kaca.",
+        "Toples kaca bekas bisa disulap menjadi tempat penyimpanan makanan kering yang aman dan higienis."
+      ],
+      "impact": [
+        "Mengurangi eksploitasi pasir silika di alam liar dan menghemat energi peleburan kaca baru hingga 30%.",
+        "Mengurangi polusi udara pabrik kaca baru karena peleburan beling bekas membutuhkan suhu pembakaran lebih rendah.",
+        "Menjaga lingkungan dari pecahan beling berbahaya yang bisa melukai makhluk hidup."
+      ],
+      "notes": [
+        "Pecahan kaca tajam harus dibungkus koran bekas tebal and ditandai tulisan 'Awas Pecahan Kaca' sebelum dibuang agar aman bagi petugas kebersihan.",
+        "Cermin dan lampu bohlam memiliki kandungan kimia yang berbeda dari kaca botol biasa, sehingga tidak boleh disatukan dalam wadah daur ulang kaca.",
+        "Pastikan tutup plastik atau gabus botol kaca dilepas terlebih dahulu sebelum didaur ulang."
+      ]
     },
-    'Lainnya': {
-      'disposal': 'Buang di tempat sampah umum. Untuk bahan berbahaya seperti baterai atau elektronik, gunakan tempat pembuangan khusus B3.',
-      'impact': 'Sampah yang tidak terklasifikasi sering berakhir di TPA dan mencemari tanah serta air tanah.',
-      'recycling': 'Identifikasi material penyusunnya. Banyak komponen dari sampah campuran masih bisa dipisah dan didaur ulang.',
-      'notes': 'Jika ragu dengan jenis sampahnya, pisahkan dan konsultasikan ke petugas kebersihan atau bank sampah terdekat.',
-    },
+    "plastic": {
+      "disposal": [
+        "Bilas wadah plastik bekas makanan, keringkan, lalu masukkan ke tong sampah plastik/anorganik.",
+        "Remas botol plastik PET agar kempes untuk menghemat tempat, lalu buang ke tempat sampah plastik khusus.",
+        "Pilah sampah plastik bersih dari sampah basah dan masukkan ke tempat penampungan anorganik daur ulang."
+      ],
+      "recycling": [
+        "Dapat diolah kembali menjadi paving block ramah lingkungan, benang polyester pakaian, pot gantung tanaman, atau kerajinan kreatif.",
+        "Botol plastik bekas bisa dibuat menjadi celengan anak, wadah alat tulis, atau hiasan lampu gantung.",
+        "Bisa disalurkan ke bank sampah untuk dicacah industri menjadi bijih plastik daur ulang yang bernilai ekonomis."
+      ],
+      "impact": [
+        "Mengurangi pencemaran sampah mikroplastik di lautan yang meracuni terumbu karang dan rantai makanan laut.",
+        "Menghemat penggunaan minyak bumi sebagai bahan utama pembuatan bijih plastik murni.",
+        "Mencegah penyumbatan saluran air yang sering memicu banjir di perkotaan saat musim hujan."
+      ],
+      "notes": [
+        "Plastik sekali pakai (kresek tipis dan sedotan) sangat sulit didaur ulang secara ekonomi, sehingga cara terbaik adalah menolak penggunaannya.",
+        "Periksa simbol segitiga kode daur ulang di bawah wadah (PETE 1, HDPE 2 adalah yang paling mudah diterima bank sampah).",
+        "Rendam label stiker kertas pada botol plastik dan lepaskan agar bijih plastik daur ulang bersih optimal."
+      ]
+    }
   };
 
-  // ─── Main inference entry point ─────────────────────────────────────────────
-  Future<Map<String, dynamic>> predict(String imagePath) async {
+  Future<void> initialize() async {
+    if (_session != null) return;
     try {
-      final file = File(imagePath);
-      if (!await file.exists()) {
-        return {'success': false, 'error': 'File gambar tidak ditemukan.'};
+      final ort = OnnxRuntime();
+      _session = await ort.createSessionFromAsset('assets/vibecomodel.onnx');
+    } catch (e) {
+      debugPrint("Failed to initialize ONNX Runtime session: $e");
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> predict(String imagePath) async {
+    await initialize();
+    if (_session == null) {
+      throw StateError("ONNX session is not initialized");
+    }
+
+    try {
+      final File imageFile = File(imagePath);
+      final Uint8List bytes = await imageFile.readAsBytes();
+      final img.Image? decoded = img.decodeImage(bytes);
+      if (decoded == null) {
+        throw ArgumentError("Failed to decode image at $imagePath");
       }
 
-      final bytes = await file.readAsBytes();
-      final image = img.decodeImage(bytes);
-      if (image == null) {
-        return {'success': false, 'error': 'Gagal memuat gambar.'};
+      final img.Image resized = img.copyResize(decoded, width: 224, height: 224);
+
+      final Float32List inputData = Float32List(1 * 3 * 224 * 224);
+      final int size = 224 * 224;
+
+      for (int y = 0; y < 224; y++) {
+        for (int x = 0; x < 224; x++) {
+          final img.Pixel pixel = resized.getPixel(x, y);
+          final double r = pixel.r / 255.0;
+          final double g = pixel.g / 255.0;
+          final double b = pixel.b / 255.0;
+
+          final double rNorm = (r - 0.485) / 0.229;
+          final double gNorm = (g - 0.456) / 0.224;
+          final double bNorm = (b - 0.406) / 0.225;
+
+          final int pixelIndex = y * 224 + x;
+          inputData[pixelIndex] = rNorm;
+          inputData[size + pixelIndex] = gNorm;
+          inputData[2 * size + pixelIndex] = bNorm;
+        }
       }
 
-      // Down-sample for fast processing
-      final thumb = img.copyResize(image, width: 64, height: 64);
+      final inputNames = _session!.inputNames;
+      final String inputName = inputNames.isNotEmpty ? inputNames.first : 'input';
 
-      final classIndex = _inferClass(thumb);
-      final confidence = _estimateConfidence(thumb, classIndex);
-      final className = _classes[classIndex];
-      final info = _knowledge[className]!;
-      final lowConfidence = confidence < 0.40;
+      final OrtValue inputTensor = await OrtValue.fromList(inputData, [1, 3, 224, 224]);
+
+      final outputs = await _session!.run({inputName: inputTensor});
+      inputTensor.dispose();
+
+      if (outputs.isEmpty) {
+        throw StateError("Model inference returned no outputs");
+      }
+
+      final String outputName = _session!.outputNames.isNotEmpty ? _session!.outputNames.first : 'output';
+      final OrtValue outputVal = outputs[outputName]!;
+
+      final List<dynamic> outputList = await outputVal.asList();
+      final List<double> scores = (outputList.first as List<dynamic>).cast<double>();
+
+      for (final tensor in outputs.values) {
+        tensor.dispose();
+      }
+
+      double maxVal = scores.reduce(max);
+      List<double> expScores = scores.map((s) => exp(s - maxVal)).toList();
+      double sumExp = expScores.reduce((a, b) => a + b);
+      List<double> probabilities = expScores.map((e) => e / sumExp).toList();
+
+      int bestIdx = 0;
+      double maxProb = 0.0;
+      for (int i = 0; i < probabilities.length; i++) {
+        if (probabilities[i] > maxProb) {
+          maxProb = probabilities[i];
+          bestIdx = i;
+        }
+      }
+
+      final String rawClass = _classNames[bestIdx];
+      final double confidence = maxProb;
+
+      final random = Random();
+      final Map<String, List<String>>? wasteInfo = _wasteInfoDb[rawClass];
+
+      String disposal = "N/A";
+      String recycling = "N/A";
+      String impact = "N/A";
+      String notes = "N/A";
+
+      if (wasteInfo != null) {
+        final disposalList = wasteInfo["disposal"] ?? ["N/A"];
+        final recyclingList = wasteInfo["recycling"] ?? ["N/A"];
+        final impactList = wasteInfo["impact"] ?? ["N/A"];
+        final notesList = wasteInfo["notes"] ?? ["N/A"];
+
+        disposal = disposalList[random.nextInt(disposalList.length)];
+        recycling = recyclingList[random.nextInt(recyclingList.length)];
+        impact = impactList[random.nextInt(impactList.length)];
+        notes = notesList[random.nextInt(notesList.length)];
+      }
+
+      // Confidence threshold: if below 40%, mark as low confidence
+      if (confidence < 0.40) {
+        return {
+          "success": true,
+          "low_confidence": true,
+          "class": rawClass.toUpperCase(),
+          "confidence": confidence,
+          "class_name": _translateCategory(rawClass),
+          "disposal": disposal,
+          "recycling": recycling,
+          "impact": impact,
+          "notes": notes,
+        };
+      }
 
       return {
-        'success': true,
-        'class_name': className,
-        'class_index': classIndex,
-        'confidence': confidence,
-        'low_confidence': lowConfidence,
-        'disposal': info['disposal']!,
-        'impact': info['impact']!,
-        'recycling': info['recycling']!,
-        'notes': info['notes']!,
+        "success": true,
+        "low_confidence": false,
+        "class": rawClass.toUpperCase(),
+        "confidence": confidence,
+        "class_name": _translateCategory(rawClass),
+        "disposal": disposal,
+        "recycling": recycling,
+        "impact": impact,
+        "notes": notes,
       };
     } catch (e) {
-      return {'success': false, 'error': 'Terjadi kesalahan: $e'};
+      debugPrint("Prediction failed: $e");
+      return {
+        "success": false,
+        "error": e.toString(),
+      };
     }
   }
 
-  // ─── Feature extraction ─────────────────────────────────────────────────────
-
-  /// Classifies the image into one of the 7 waste categories
-  /// using color histogram and luminance heuristics.
-  int _inferClass(img.Image thumb) {
-    double totalR = 0, totalG = 0, totalB = 0;
-    double totalSat = 0, totalVal = 0;
-    int pixelCount = thumb.width * thumb.height;
-
-    for (int y = 0; y < thumb.height; y++) {
-      for (int x = 0; x < thumb.width; x++) {
-        final pixel = thumb.getPixel(x, y);
-        final r = pixel.r.toDouble();
-        final g = pixel.g.toDouble();
-        final b = pixel.b.toDouble();
-        totalR += r;
-        totalG += g;
-        totalB += b;
-
-        // Compute saturation & value (HSV)
-        final maxC = [r, g, b].reduce(max);
-        final minC = [r, g, b].reduce(min);
-        final sat = maxC > 0 ? (maxC - minC) / maxC : 0.0;
-        totalSat += sat;
-        totalVal += maxC / 255.0;
-      }
+  String _translateCategory(String englishCategory) {
+    switch (englishCategory) {
+      case "glass": return "Kaca";
+      case "hazardous": return "Limbah B3 (Berbahaya)";
+      case "metal": return "Logam / Kaleng";
+      case "organic": return "Organik / Sisa Makanan";
+      case "paper": return "Kertas";
+      case "plastic": return "Plastik";
+      case "textile": return "Kain / Tekstil";
+      default: return englishCategory.toUpperCase();
     }
-
-    final avgR = totalR / pixelCount;
-    final avgG = totalG / pixelCount;
-    final avgB = totalB / pixelCount;
-    final avgSat = totalSat / pixelCount;
-    final avgVal = totalVal / pixelCount;
-    final avgLum = (avgR * 0.299 + avgG * 0.587 + avgB * 0.114) / 255.0;
-
-    // ── Heuristic rules ──────────────────────────────────────────────────────
-
-    // Organik: dominant green or brown tones, medium saturation
-    if (avgG > avgR * 1.05 && avgG > avgB * 1.05 && avgSat > 0.15) return 4;
-
-    // Kaca: very high brightness, low saturation (transparent/reflective)
-    if (avgLum > 0.75 && avgSat < 0.15) return 2;
-
-    // Logam: high brightness but mid saturation, slight blue-grey hue
-    if (avgLum > 0.55 && avgSat < 0.20 && avgB >= avgR * 0.95) return 3;
-
-    // Plastik: saturated, diverse hue (usually bright colors)
-    if (avgSat > 0.30 && avgVal > 0.40) return 0;
-
-    // Kertas: off-white/beige — high luminance, very low saturation
-    if (avgLum > 0.60 && avgSat < 0.10) return 1;
-
-    // Kain: muted colors, low-medium saturation
-    if (avgSat < 0.25 && avgLum < 0.60) return 5;
-
-    // Fallback: Lainnya
-    return 6;
   }
 
-  /// Produces a pseudo-confidence score in [0.0, 1.0] range,
-  /// derived from how strongly the image matches the inferred class.
-  double _estimateConfidence(img.Image thumb, int classIndex) {
-    final rng = Random(thumb.getPixel(thumb.width ~/ 2, thumb.height ~/ 2).r.toInt());
-    // Base score varies by class stability
-    const baseScores = [0.62, 0.65, 0.58, 0.60, 0.70, 0.55, 0.45];
-    final base = baseScores[classIndex];
-    // Add small random variance ±12%
-    final variance = (rng.nextDouble() - 0.5) * 0.24;
-    return (base + variance).clamp(0.20, 0.95);
+  Future<void> dispose() async {
+    await _session?.close();
+    _session = null;
   }
 }

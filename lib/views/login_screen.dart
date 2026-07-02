@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../core/theme/app_theme.dart';
@@ -29,6 +30,7 @@ class _LoginScreenState extends State<LoginScreen>
   final List<Animation<double>> _fields = [];
 
   Future<void> _requestInitialPermissions() async {
+    if (kIsWeb) return;
     await [
       Permission.locationWhenInUse,
       Permission.camera,

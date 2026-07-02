@@ -19,14 +19,17 @@ class MonthlyClassScore {
     required this.updatedAt,
   });
 
+  /// Handles both /monthly-class-scores format and /rankings?interval=monthly format.
+  /// Rankings format: {class_id, class_name, score}
   factory MonthlyClassScore.fromJson(Map<String, dynamic> json) {
+    final now = DateTime.now();
     return MonthlyClassScore(
-      id: json['id'] as int,
-      schoolClassId: json['school_class_id'] as int,
-      schoolClassName: json['school_class_name']?.toString() ?? '',
-      year: json['year'] as int,
-      month: json['month'] as int,
-      score: (json['score'] as num).toDouble(),
+      id: (json['id'] as int?) ?? 0,
+      schoolClassId: (json['school_class_id'] as int?) ?? (json['class_id'] as int?) ?? 0,
+      schoolClassName: json['school_class_name']?.toString() ?? json['class_name']?.toString() ?? '',
+      year: (json['year'] as int?) ?? now.year,
+      month: (json['month'] as int?) ?? now.month,
+      score: json['score'] != null ? (json['score'] as num).toDouble() : 0.0,
       createdAt: json['created_at']?.toString() ?? '',
       updatedAt: json['updated_at']?.toString() ?? '',
     );
