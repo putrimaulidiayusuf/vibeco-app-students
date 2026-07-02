@@ -107,7 +107,7 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                     child: Center(
                       child: Image.asset(
-                        'assets/images/dummy.png',
+                        'assets/images/foto.png',
                         width: 90,
                         height: 90,
                         fit: BoxFit.contain,
