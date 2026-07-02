@@ -23,13 +23,117 @@ class VerificationQueueScreen extends StatelessWidget {
         return vm;
       },
       child: Scaffold(
-        body: Consumer<VerificationQueueViewModel>(
-          builder: (context, viewModel, child) {
-            if (viewModel.isLoading && viewModel.pendingSubmissions.isEmpty) {
-              return const Center(child: CircularProgressIndicator());
-            }
+        backgroundColor: const Color(0xFFF8FAF8),
+        body: Column(
+          children: [
+            // ─── PREMIUM GRADIENT HEADER ───
+            Container(
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF0F4D3A), Color(0xFF06241B)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(32),
+                  bottomRight: Radius.circular(32),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Color(0xFF06241B),
+                    blurRadius: 20,
+                    offset: Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 22),
+                  child: Row(
+                    children: [
+                      // Back Button
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(14),
+                          onTap: () => Navigator.pop(context),
+                          child: Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.2),
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.arrow_back_ios_new_rounded,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      // Icon
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.pending_actions_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Title & subtitle
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Antrean Verifikasi',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                letterSpacing: 0.3,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Menunggu persetujuan kebersihan',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.white60,
+                                letterSpacing: 0.2,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              child: Consumer<VerificationQueueViewModel>(
+                builder: (context, viewModel, child) {
+                  if (viewModel.isLoading && viewModel.pendingSubmissions.isEmpty) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-            return RefreshIndicator(
+                  return RefreshIndicator(
               onRefresh: () async {
                 if (token != null) {
                   await viewModel.fetchQueue(token);
@@ -227,8 +331,11 @@ class VerificationQueueScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-            );
-          },
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );
