@@ -7,6 +7,7 @@ import '../../core/services/auth_service.dart';
 import '../../core/config/app_config.dart';
 import '../../core/models/piket_team_model.dart';
 import '../../viewmodels/student/smart_check_viewmodel.dart';
+import '../../widgets/universal_image/universal_image.dart';
 
 class SmartCheckScreen extends StatefulWidget {
   const SmartCheckScreen({super.key});
@@ -550,12 +551,8 @@ class _SmartCheckScreenState extends State<SmartCheckScreen> {
                                                     BorderRadius.circular(
                                                       AppTheme.radiusSmall,
                                                     ),
-                                                child: Image.network(
-                                                  imageUrl,
-                                                  headers: {
-                                                    'Authorization':
-                                                        'Bearer $token',
-                                                  },
+                                                child: UniversalImage(
+                                                  imageUrl: imageUrl,
                                                   width: 80,
                                                   fit: BoxFit.cover,
                                                   errorBuilder:

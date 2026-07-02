@@ -414,26 +414,66 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: isAlreadySubmitted
-                                  ? AppColors.primaryGreen.withValues(
-                                      alpha: 0.1,
-                                    )
-                                  : Colors.red.shade50,
-                              shape: BoxShape.circle,
+                          if (!isAlreadySubmitted) ...[
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.withValues(alpha: 0.05),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: Colors.orange.withValues(alpha: 0.2),
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  Image.asset(
+                                    'assets/images/maskotbingung.png',
+                                    width: 120,
+                                    height: 120,
+                                    fit: BoxFit.contain,
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.lock_rounded, size: 14, color: AppColors.error),
+                                        SizedBox(width: 4),
+                                        Text(
+                                          'TERKUNCI',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w800,
+                                            color: AppColors.error,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                            child: Icon(
-                              isAlreadySubmitted
-                                  ? Icons.check_circle_rounded
-                                  : Icons.lock_rounded,
-                              color: isAlreadySubmitted
-                                  ? AppColors.primaryGreen
-                                  : AppColors.error,
-                              size: 48,
+                          ] else ...[
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryGreen.withValues(alpha: 0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.check_circle_rounded,
+                                color: AppColors.primaryGreen,
+                                size: 48,
+                              ),
                             ),
-                          ),
+                          ],
                           const SizedBox(height: 18),
                           Text(
                             isAlreadySubmitted

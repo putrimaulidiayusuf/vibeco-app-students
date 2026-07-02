@@ -7,6 +7,7 @@ import '../../core/config/app_config.dart';
 import '../../core/models/submission_model.dart';
 import '../../core/models/monthly_class_score_model.dart';
 import '../../viewmodels/student/clean_track_viewmodel.dart';
+import '../../widgets/universal_image/universal_image.dart';
 
 class CleanTrackScreen extends StatefulWidget {
   const CleanTrackScreen({super.key});
@@ -16,6 +17,8 @@ class CleanTrackScreen extends StatefulWidget {
 }
 
 class _CleanTrackScreenState extends State<CleanTrackScreen> {
+  DateTime? _selectedDateFilter;
+
   String _formatDateIndonesian(String dateStr) {
     try {
       final date = DateTime.parse(dateStr).toLocal();
@@ -403,17 +406,177 @@ class _CleanTrackScreenState extends State<CleanTrackScreen> {
       );
     }
 
-    return RefreshIndicator(
-      onRefresh: () async {
-        if (token != null) await viewModel.fetchHistory(token);
-      },
-      color: AppColors.primaryGreen,
-      child: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
-        physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: viewModel.submissions.length,
-        itemBuilder: (context, index) {
-          final sub = viewModel.submissions[index];
+    final filteredSubmissions = viewModel.submissions.where((sub) {
+      if (_selectedDateFilter == null) return true;
+      try {
+        final date = DateTime.parse(sub.date).toLocal();
+        return date.year == _selectedDateFilter!.year &&
+               date.month == _selectedDateFilter!.month &&
+               date.day == _selectedDateFilter!.day;
+      } catch (_) {
+        return false;
+      }
+    }).toList();
+
+    return Column(
+      children: [
+        // Premium capsule search/filter bar
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.calendar_today_rounded, size: 16, color: AppColors.primaryGreen),
+                  const SizedBox(width: 8),
+                  Text(
+                    _selectedDateFilter == null
+                        ? 'Menampilkan semua laporan'
+                        : 'Filter: ${DateFormat('dd MMMM yyyy', 'id_ID').format(_selectedDateFilter!)}',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: _selectedDateFilter == null ? Colors.grey[700] : AppColors.primaryGreen,
+                    ),
+                  ),
+                ],
+              ),
+              GestureDetector(
+                onTap: () async {
+                  if (_selectedDateFilter != null) {
+                    setState(() {
+                      _selectedDateFilter = null;
+                    });
+                  } else {
+                    final date = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.now(),
+                      firstDate: DateTime(2025),
+                      lastDate: DateTime.now(),
+                      locale: const Locale('id', 'ID'),
+                      builder: (context, child) {
+                        return Theme(
+                          data: Theme.of(context).copyWith(
+                            colorScheme: const ColorScheme.light(
+                              primary: Color(0xFF0F4D3A),
+                              onPrimary: Colors.white,
+                              onSurface: AppColors.emeraldDark,
+                            ),
+                          ),
+                          child: child!,
+                        );
+                      },
+                    );
+                    if (date != null) {
+                      setState(() {
+                        _selectedDateFilter = date;
+                      });
+                    }
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: _selectedDateFilter == null
+                        ? AppColors.primaryGreen.withValues(alpha: 0.1)
+                        : Colors.red.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _selectedDateFilter == null
+                            ? Icons.date_range_rounded
+                            : Icons.clear_rounded,
+                        size: 16,
+                        color: _selectedDateFilter == null ? AppColors.primaryGreen : Colors.red,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _selectedDateFilter == null ? 'Cari Tanggal' : 'Hapus Filter',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: _selectedDateFilter == null ? AppColors.primaryGreen : Colors.red,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: () async {
+              if (token != null) await viewModel.fetchHistory(token);
+            },
+            color: AppColors.primaryGreen,
+            child: filteredSubmissions.isEmpty
+                ? ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: [
+                      SizedBox(height: MediaQuery.of(context).size.height * 0.15),
+                      Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.withValues(alpha: 0.08),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.search_off_rounded,
+                                size: 56,
+                                color: Colors.orange,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            const Text(
+                              'Tidak Ada Laporan',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.emeraldDark,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Tidak ditemukan laporan pada tanggal tersebut.',
+                              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                            ),
+                            const SizedBox(height: 16),
+                            TextButton.icon(
+                              onPressed: () {
+                                setState(() {
+                                  _selectedDateFilter = null;
+                                });
+                              },
+                              icon: const Icon(Icons.refresh_rounded, color: AppColors.primaryGreen),
+                              label: const Text(
+                                'Reset Pencarian',
+                                style: TextStyle(color: AppColors.primaryGreen, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    itemCount: filteredSubmissions.length,
+                    itemBuilder: (context, index) {
+                      final sub = filteredSubmissions[index];
           final displayScore = sub.displayScore;
           final timeStr = _formatTime(sub.createdAt);
           final hasScoreDetails = sub.dailyClassScore != null;
@@ -492,9 +655,8 @@ class _CleanTrackScreenState extends State<CleanTrackScreen> {
                             ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(11),
-                              child: Image.network(
-                                imageUrl,
-                                headers: token != null ? {'Authorization': 'Bearer $token'} : null,
+                              child: UniversalImage(
+                                imageUrl: imageUrl,
                                 width: 110,
                                 height: 96,
                                 fit: BoxFit.cover,
@@ -641,8 +803,11 @@ class _CleanTrackScreenState extends State<CleanTrackScreen> {
               ],
             ),
           );
-        },
-      ),
+                    },
+                  ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -688,7 +853,19 @@ class _CleanTrackScreenState extends State<CleanTrackScreen> {
       );
     }
 
-    if (viewModel.monthlyScores.isEmpty) {
+    final auth = Provider.of<AuthService>(context, listen: false);
+    final user = auth.user;
+    final filteredScores = viewModel.monthlyScores.where((mScore) {
+      if (user?.classId != null) {
+        return mScore.schoolClassId == user!.classId;
+      }
+      if (user?.className != null && user!.className!.isNotEmpty) {
+        return mScore.schoolClassName.toLowerCase() == user.className!.toLowerCase();
+      }
+      return true;
+    }).toList();
+
+    if (filteredScores.isEmpty) {
       return RefreshIndicator(
         onRefresh: () async {
           if (token != null) await viewModel.fetchMonthlyScores(token);
@@ -744,9 +921,9 @@ class _CleanTrackScreenState extends State<CleanTrackScreen> {
       child: ListView.builder(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
         physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: viewModel.monthlyScores.length,
+        itemCount: filteredScores.length,
         itemBuilder: (context, index) {
-          final MonthlyClassScore mScore = viewModel.monthlyScores[index];
+          final MonthlyClassScore mScore = filteredScores[index];
           final monthName = _getMonthName(mScore.month);
           final displayScore = mScore.score;
 
@@ -796,14 +973,7 @@ class _CleanTrackScreenState extends State<CleanTrackScreen> {
                             color: AppColors.emeraldDark,
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Kelas: ${mScore.schoolClassName}',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey[600],
-                          ),
-                        ),
+                        // Class name omitted as requested
                       ],
                     ),
                   ),

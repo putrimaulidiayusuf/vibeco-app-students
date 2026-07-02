@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/services/onnx_predictor.dart';
+import '../../core/services/gemini_service.dart';
 import '../../core/theme/app_theme.dart';
 import 'camera_scanner_screen.dart';
 
@@ -19,6 +20,7 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final ImagePicker _picker = ImagePicker();
+  final GeminiService _geminiService = GeminiService();
   bool _isAiResponding = false;
 
   @override
@@ -39,8 +41,8 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
       } else {
         // Welcome message
         _addAiMessage(
-          "Halo! Saya **PRABA AI**, Asisten Cerdas Kebersihan VibeCo.\n\n"
-          "Kirimkan foto sampah dari **Kamera Pemindai** (real-time) atau **Galeri** Anda untuk mengetahui kategori sampah, cara membuang, dampak lingkungan, serta cara mendaur ulangnya!"
+          "Halo! Saya PRABA AI, Asisten Cerdas Kebersihan VibeCo.\n\n"
+          "Kirimkan foto sampah dari Kamera Pemindai (real-time) atau Galeri Anda untuk mengetahui kategori sampah, cara membuang, dampak lingkungan, serta cara mendaur ulangnya!"
         );
       }
       _scrollToBottom();
@@ -111,7 +113,7 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
         
         if (result['low_confidence'] == true) {
           final String responseText = 
-              "Saya melihat kemiripan dengan sampah **$category** (${confPct.toStringAsFixed(1)}%), namun tingkat keyakinan saya masih di bawah batas minimal (40%).\n\n"
+              "Saya melihat kemiripan dengan sampah $category (${confPct.toStringAsFixed(1)}%), namun tingkat keyakinan saya masih di bawah batas minimal (40%).\n\n"
               "Mohon pastikan objek sampah berada di tengah frame, memiliki pencahayaan yang cukup, dan tidak terhalang bayangan agar saya dapat mendeteksinya dengan akurat.";
           
           _addAiMessage(
@@ -120,7 +122,11 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
           );
         } else {
           final String responseText = 
-              "Saya mendeteksi objek ini sebagai sampah **$category** dengan tingkat keyakinan **${confPct.toStringAsFixed(1)}%**.";
+              "Saya mendeteksi objek ini sebagai sampah $category dengan tingkat keyakinan ${confPct.toStringAsFixed(1)}%.\n\n"
+              "💡 Tips Pembuangan:\n${result['disposal']}\n\n"
+              "♻️ Cara Daur Ulang:\n${result['recycling']}\n\n"
+              "🌍 Dampak Lingkungan:\n${result['impact']}\n\n"
+              "📝 Catatan Tambahan:\n${result['notes']}";
           
           _addAiMessage(
             responseText,
@@ -129,10 +135,20 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
           );
         }
       } else {
-        _addAiMessage("Maaf, saya tidak dapat menganalisis gambar ini. Error: ${result['error']}");
+        _addAiMessage(
+          "Maaf ya 🙏, saya tidak berhasil menganalisis foto ini.\n\n"
+          "Beberapa kemungkinan penyebabnya:\n"
+          "• Foto terlalu gelap atau buram\n"
+          "• Objek tidak terlihat jelas\n"
+          "• Format gambar tidak didukung\n\n"
+          "Coba kirim ulang dengan foto yang lebih jelas ya! 📸"
+        );
       }
     } catch (e) {
-      _addAiMessage("Terjadi kesalahan sistem saat mendeteksi gambar: $e");
+      _addAiMessage(
+        "Waduh, terjadi gangguan teknis saat saya menganalisis foto 😅\n\n"
+        "Silakan coba lagi dalam beberapa saat. Pastikan foto sampah terlihat jelas dan tidak terlalu besar ukurannya."
+      );
     } finally {
       setState(() {
         _isAiResponding = false;
@@ -178,7 +194,7 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
 
           if (pred['low_confidence'] == true) {
             final String responseText = 
-                "Hasil jepretan kamera menunjukkan kemiripan dengan sampah **$category** (${confPct.toStringAsFixed(1)}%), namun tingkat keyakinan saya masih terlalu rendah.\n\n"
+                "Hasil jepretan kamera menunjukkan kemiripan dengan sampah $category (${confPct.toStringAsFixed(1)}%), namun tingkat keyakinan saya masih terlalu rendah.\n\n"
                 "Coba dekatkan kamera ke objek sampah dan pastikan posisinya berada tepat di tengah kotak pemindai.";
             
             _addAiMessage(
@@ -187,7 +203,11 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
             );
           } else {
             final String responseText = 
-                "Saya mendeteksi objek ini sebagai sampah **$category** dengan tingkat keyakinan **${confPct.toStringAsFixed(1)}%**.";
+                "Saya mendeteksi objek ini sebagai sampah $category dengan tingkat keyakinan ${confPct.toStringAsFixed(1)}%.\n\n"
+                "💡 Tips Pembuangan:\n${pred['disposal']}\n\n"
+                "♻️ Cara Daur Ulang:\n${pred['recycling']}\n\n"
+                "🌍 Dampak Lingkungan:\n${pred['impact']}\n\n"
+                "📝 Catatan Tambahan:\n${pred['notes']}";
 
             _addAiMessage(
               responseText,
@@ -211,7 +231,7 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
     }
   }
 
-  void _handleTextSubmitted(String text) {
+  Future<void> _handleTextSubmitted(String text) async {
     if (text.trim().isEmpty) return;
     _textController.clear();
     _addUserMessage(text);
@@ -220,24 +240,22 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
       _isAiResponding = true;
     });
 
-    Future.delayed(const Duration(milliseconds: 1000), () {
-      final lower = text.toLowerCase();
-      String reply = "";
-      if (lower.contains("halo") || lower.contains("hai")) {
-        reply = "Halo! Ada yang bisa saya bantu hari ini? Silakan kirimkan foto sampah Anda agar saya bisa mendeteksinya.";
-      } else if (lower.contains("siapa") || lower.contains("praba")) {
-        reply = "Saya adalah *PRABA AI*, asisten kebersihan VibeCo Anda. Saya dilatih untuk mendeteksi 7 jenis sampah menggunakan model AI secara lokal di perangkat Anda.";
-      } else if (lower.contains("bersih") || lower.contains("piket")) {
-        reply = "Untuk menjaga kebersihan kelas, pastikan Anda menyapu lantai, merapikan meja, dan membuang sampah sesuai dengan tempat pembuangan yang benar.";
-      } else {
-        reply = "Untuk menganalisis sampah dengan akurat, silakan gunakan tombol kamera pemindai (kiri) atau ikon galeri di bawah untuk mengirimkan foto objek sampah.";
-      }
-
+    try {
+      final reply = await _geminiService.chat(
+        message: text,
+        history: _messages,
+      );
       _addAiMessage(reply);
+    } catch (e) {
+      _addAiMessage(
+        "Waduh, terjadi gangguan teknis saat menghubungi asisten AI 😅\n\n"
+        "Silakan coba lagi dalam beberapa saat."
+      );
+    } finally {
       setState(() {
         _isAiResponding = false;
       });
-    });
+    }
   }
 
   void _clearChat() {
@@ -261,7 +279,7 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
               await prefs.remove('praba_chat_history');
               _addAiMessage(
                 "Halo! Saya *PRABA AI*, Asisten Cerdas Kebersihan VibeCo.\n\n"
-                "Kirimkan foto sampah dari **Kamera Pemindai** atau **Galeri** Anda untuk mendeteksi kategori dan mendapatkan panduan pengolahannya!"
+                "Kirimkan foto sampah dari Kamera Pemindai atau Galeri Anda untuk mendeteksi kategori dan mendapatkan panduan pengolahannya!"
               );
             },
             child: const Text("Hapus", style: TextStyle(color: Colors.red)),
@@ -502,8 +520,8 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
           if (!isUser) ...[
             // AI mascot avatar
             Container(
-              width: 36,
-              height: 36,
+              width: 48,
+              height: 48,
               margin: const EdgeInsets.only(right: 8, bottom: 2),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
@@ -517,7 +535,7 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
               ),
               child: ClipOval(
                 child: Transform.scale(
-                  scale: 1.25,
+                  scale: 1.5,
                   child: Image.asset(
                     'assets/images/maskotprofil.png',
                     fit: BoxFit.cover,
