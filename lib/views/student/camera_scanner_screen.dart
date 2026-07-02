@@ -24,6 +24,8 @@ class _CameraScannerScreenState extends State<CameraScannerScreen> {
   Timer? _scanTimer;
   bool _streamActive = false;
   CameraImage? _latestFrame;
+  Map<String, dynamic>? _latestPrediction;
+  int _sensorOrientation = 0;
 
   @override
   void initState() {
@@ -46,9 +48,11 @@ class _CameraScannerScreenState extends State<CameraScannerScreen> {
         orElse: () => cameras.first,
       );
 
+      _sensorOrientation = backCam.sensorOrientation;
+
       _controller = CameraController(
         backCam,
-        ResolutionPreset.medium, // medium for preview quality
+        ResolutionPreset.high,
         enableAudio: false,
         imageFormatGroup: ImageFormatGroup.yuv420,
       );
@@ -93,10 +97,19 @@ class _CameraScannerScreenState extends State<CameraScannerScreen> {
 
     try {
       // Convert CameraImage (YUV420) to RGB Image, then center-crop
-      final img.Image? rgbImage = _convertYUV420toImage(frame);
+      img.Image? rgbImage = _convertYUV420toImage(frame);
       if (rgbImage == null) {
         _isProcessing = false;
         return;
+      }
+
+      // Rotate based on sensor orientation so the image is upright
+      if (_sensorOrientation == 90) {
+        rgbImage = img.copyRotate(rgbImage, angle: 90);
+      } else if (_sensorOrientation == 270) {
+        rgbImage = img.copyRotate(rgbImage, angle: -90);
+      } else if (_sensorOrientation == 180) {
+        rgbImage = img.copyRotate(rgbImage, angle: 180);
       }
 
       // Center crop 70% of the image (matching the scan box overlay)
@@ -119,7 +132,7 @@ class _CameraScannerScreenState extends State<CameraScannerScreen> {
       final tempDir = Directory.systemTemp;
       final tempFile = File(
           '${tempDir.path}/scan_frame_${DateTime.now().millisecondsSinceEpoch}.jpg');
-      await tempFile.writeAsBytes(img.encodeJpg(cropped, quality: 85));
+      await tempFile.writeAsBytes(img.encodeJpg(cropped, quality: 90));
 
       final result = await OnnxPredictor().predict(tempFile.path);
 
@@ -134,9 +147,11 @@ class _CameraScannerScreenState extends State<CameraScannerScreen> {
           if (conf < 0.40) {
             _predictionText = "Objek tidak dikenali";
             _confidence = conf;
+            _latestPrediction = null;
           } else {
             _predictionText = "${result['class_name']}";
             _confidence = conf;
+            _latestPrediction = result;
           }
         });
       }
@@ -246,7 +261,15 @@ class _CameraScannerScreenState extends State<CameraScannerScreen> {
         await croppedFile.writeAsBytes(img.encodeJpg(croppedImg, quality: 90));
       }
 
-      final result = await OnnxPredictor().predict(finalPath);
+      // Reuse the cached live prediction if it had high confidence,
+      // ensuring consistency between camera overlay and chatbot message.
+      // Otherwise, re-predict the captured photo.
+      final Map<String, dynamic> result;
+      if (_latestPrediction != null && _confidence >= 0.40) {
+        result = _latestPrediction!;
+      } else {
+        result = await OnnxPredictor().predict(finalPath);
+      }
 
       if (mounted) {
         Navigator.pop(context); // Dismiss spinner
