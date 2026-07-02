@@ -7,13 +7,13 @@ import 'core/services/auth_service.dart';
 import 'core/theme/app_theme.dart';
 import 'views/login_screen.dart';
 import 'views/student/student_dashboard.dart';
-import 'views/teacher/teacher_dashboard.dart';
+import 'views/student/access_denied_screen.dart';
 
 void main() {
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   // Ensure the service locator is configured
-  locator.reset(); 
+  locator.reset();
   runApp(
     ChangeNotifierProvider(
       create: (_) => AuthService(),
@@ -31,7 +31,7 @@ class MainApp extends StatelessWidget {
       title: 'VibeCo',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const SplashScreen(),//AuthGate(),
+      home: const SplashScreen(), //AuthGate(),
     );
   }
 }
@@ -45,11 +45,7 @@ class AuthGate extends StatelessWidget {
 
     // Show a loading indicator while the auth state is being initialized from SharedPreferences
     if (!auth.isInitialized) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     // If not authenticated, show the beautiful Login Screen
@@ -63,7 +59,7 @@ class AuthGate extends StatelessWidget {
     if (user.isStudent) {
       return const StudentDashboard();
     } else {
-      return const TeacherDashboard();
+      return const AccessDeniedScreen();
     }
   }
 }

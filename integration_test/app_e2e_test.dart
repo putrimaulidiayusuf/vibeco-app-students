@@ -5,7 +5,7 @@ import 'package:vibeco_app/main.dart';
 import 'package:vibeco_app/core/services/service_locator.dart';
 import 'package:vibeco_app/views/login_screen.dart';
 import 'package:vibeco_app/views/student/student_dashboard.dart';
-import 'package:vibeco_app/views/teacher/teacher_dashboard.dart';
+import 'package:vibeco_app/views/student/access_denied_screen.dart';
 import 'mock_services.dart';
 
 void main() {
@@ -22,15 +22,20 @@ void main() {
   });
 
   group('Tier 1: Feature Coverage Tests', () {
-    testWidgets('T1_AUTH_01 & T1_AUTH_04: Student login and logout flow', (tester) async {
+    testWidgets('T1_AUTH_01 & T1_AUTH_04: Student login and logout flow', (
+      tester,
+    ) async {
       await tester.pumpWidget(const MainApp());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('role_student')));
-      await tester.pumpAndSettle();
-
-      await tester.enterText(find.byKey(const ValueKey('username_field')), '12345');
-      await tester.enterText(find.byKey(const ValueKey('password_field')), 'password');
+      await tester.enterText(
+        find.byKey(const ValueKey('username_field')),
+        '12345',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('password_field')),
+        'password',
+      );
       await tester.tap(find.byKey(const ValueKey('login_button')));
       await tester.pumpAndSettle();
 
@@ -41,221 +46,269 @@ void main() {
       expect(find.byType(LoginScreen), findsOneWidget);
     });
 
-    testWidgets('T1_AUTH_02: Teacher (Homeroom) login flow', (tester) async {
+    testWidgets('T1_AUTH_02: Teacher (Homeroom) login flow - Access Denied', (
+      tester,
+    ) async {
       await tester.pumpWidget(const MainApp());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('role_teacher')));
-      await tester.pumpAndSettle();
-
-      await tester.enterText(find.byKey(const ValueKey('username_field')), '11111');
-      await tester.enterText(find.byKey(const ValueKey('password_field')), 'password');
+      await tester.enterText(
+        find.byKey(const ValueKey('username_field')),
+        '11111',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('password_field')),
+        'password',
+      );
       await tester.tap(find.byKey(const ValueKey('login_button')));
       await tester.pumpAndSettle();
 
-      expect(find.byType(TeacherDashboard), findsOneWidget);
-      expect(find.text('Teacher - Homeroom Guru (homeroom)'), findsOneWidget);
+      expect(find.byType(AccessDeniedScreen), findsOneWidget);
+      expect(find.text('AKSES DITOLAK'), findsOneWidget);
+
+      await tester.tap(find.text('KELUAR'));
+      await tester.pumpAndSettle();
+      expect(find.byType(LoginScreen), findsOneWidget);
     });
 
-    testWidgets('T1_GEO & T1_TIME: Student geofence and time validation checks', (tester) async {
-      mockLocation.setCoordinates(-6.300000, 106.816666);
-      
-      await tester.pumpWidget(const MainApp());
-      await tester.pumpAndSettle();
+    testWidgets(
+      'T1_GEO & T1_TIME: Student geofence and time validation checks',
+      (tester) async {
+        mockLocation.setCoordinates(-6.300000, 106.816666);
 
-      await tester.tap(find.byKey(const ValueKey('role_student')));
-      await tester.enterText(find.byKey(const ValueKey('username_field')), '12345');
-      await tester.enterText(find.byKey(const ValueKey('password_field')), 'password');
-      await tester.tap(find.byKey(const ValueKey('login_button')));
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(const MainApp());
+        await tester.pumpAndSettle();
 
-      expect(find.byKey(const ValueKey('distance_text')), findsOneWidget);
-      expect(find.textContaining('Too far from school'), findsOneWidget);
-      
-      final submitFinder = find.byKey(const ValueKey('submit_button'));
-      ElevatedButton submitBtn = tester.widget<ElevatedButton>(submitFinder);
-      expect(submitBtn.onPressed, isNull);
-    });
+        await tester.enterText(
+          find.byKey(const ValueKey('username_field')),
+          '12345',
+        );
+        await tester.enterText(
+          find.byKey(const ValueKey('password_field')),
+          'password',
+        );
+        await tester.tap(find.byKey(const ValueKey('login_button')));
+        await tester.pumpAndSettle();
 
-    testWidgets('T1_UPLOAD & T1_AI: Student photo upload and AI score feedback', (tester) async {
-      mockLocation.setCoordinates(-6.200000, 106.816666);
-      
-      await tester.pumpWidget(const MainApp());
-      await tester.pumpAndSettle();
+        expect(find.byKey(const ValueKey('distance_text')), findsOneWidget);
+        expect(find.textContaining('Too far from school'), findsOneWidget);
 
-      await tester.tap(find.byKey(const ValueKey('role_student')));
-      await tester.enterText(find.byKey(const ValueKey('username_field')), '12345');
-      await tester.enterText(find.byKey(const ValueKey('password_field')), 'password');
-      await tester.tap(find.byKey(const ValueKey('login_button')));
-      await tester.pumpAndSettle();
+        final submitFinder = find.byKey(const ValueKey('submit_button'));
+        ElevatedButton submitBtn = tester.widget<ElevatedButton>(submitFinder);
+        expect(submitBtn.onPressed, isNull);
+      },
+    );
 
-      expect(find.text('You are at school'), findsOneWidget);
+    testWidgets(
+      'T1_UPLOAD & T1_AI: Student photo upload and AI score feedback',
+      (tester) async {
+        mockLocation.setCoordinates(-6.200000, 106.816666);
 
-      await tester.tap(find.byKey(const ValueKey('select_photos_button')));
-      await tester.pumpAndSettle();
-      expect(find.text('Simulated Photos Selected: 3'), findsOneWidget);
+        await tester.pumpWidget(const MainApp());
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('submit_button')));
-      await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byKey(const ValueKey('username_field')),
+          '12345',
+        );
+        await tester.enterText(
+          find.byKey(const ValueKey('password_field')),
+          'password',
+        );
+        await tester.tap(find.byKey(const ValueKey('login_button')));
+        await tester.pumpAndSettle();
 
-      expect(find.byKey(const ValueKey('ai_score_text')), findsOneWidget);
-      expect(find.text('AI Score: 85'), findsOneWidget);
-      expect(find.byKey(const ValueKey('findings_list')), findsOneWidget);
-    });
+        expect(find.text('You are at school'), findsOneWidget);
 
-    testWidgets('T1_RANK: CleanRank Leaderboard navigation and own class highlight', (tester) async {
-      await tester.pumpWidget(const MainApp());
-      await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('select_photos_button')));
+        await tester.pumpAndSettle();
+        expect(find.text('Simulated Photos Selected: 3'), findsOneWidget);
 
-      await tester.tap(find.byKey(const ValueKey('role_student')));
-      await tester.enterText(find.byKey(const ValueKey('username_field')), '12345');
-      await tester.enterText(find.byKey(const ValueKey('password_field')), 'password');
-      await tester.tap(find.byKey(const ValueKey('login_button')));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('submit_button')));
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.leaderboard));
-      await tester.pumpAndSettle();
+        expect(find.byKey(const ValueKey('ai_score_text')), findsOneWidget);
+        expect(find.text('AI Score: 85'), findsOneWidget);
+        expect(find.byKey(const ValueKey('findings_list')), findsOneWidget);
+      },
+    );
 
-      await tester.tap(find.byKey(const ValueKey('rank_tab_weekly')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('rank_tab_monthly')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('rank_tab_daily')));
-      await tester.pumpAndSettle();
+    testWidgets(
+      'T1_RANK: CleanRank Leaderboard navigation and own class highlight',
+      (tester) async {
+        await tester.pumpWidget(const MainApp());
+        await tester.pumpAndSettle();
 
-      expect(find.text('10-A'), findsOneWidget);
-    });
+        await tester.enterText(
+          find.byKey(const ValueKey('username_field')),
+          '12345',
+        );
+        await tester.enterText(
+          find.byKey(const ValueKey('password_field')),
+          'password',
+        );
+        await tester.tap(find.byKey(const ValueKey('login_button')));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Peringkat'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const ValueKey('rank_tab_weekly')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('rank_tab_monthly')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('rank_tab_daily')));
+        await tester.pumpAndSettle();
+
+        expect(find.text('10-A'), findsOneWidget);
+      },
+    );
   });
 
   group('Tier 2: Boundary & Corner Cases Tests', () {
-    testWidgets('T2_AUTH_02: Login with incorrect credentials fails gracefully', (tester) async {
-      await tester.pumpWidget(const MainApp());
-      await tester.pumpAndSettle();
+    testWidgets(
+      'T2_AUTH_02: Login with incorrect credentials fails gracefully',
+      (tester) async {
+        await tester.pumpWidget(const MainApp());
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('role_student')));
-      await tester.enterText(find.byKey(const ValueKey('username_field')), '12345');
-      await tester.enterText(find.byKey(const ValueKey('password_field')), 'wrongpassword');
-      await tester.tap(find.byKey(const ValueKey('login_button')));
-      await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byKey(const ValueKey('username_field')),
+          '12345',
+        );
+        await tester.enterText(
+          find.byKey(const ValueKey('password_field')),
+          'wrongpassword',
+        );
+        await tester.tap(find.byKey(const ValueKey('login_button')));
+        await tester.pumpAndSettle();
 
-      expect(find.byKey(const ValueKey('error_message')), findsOneWidget);
-      expect(find.text('Invalid credentials'), findsOneWidget);
-    });
+        expect(find.byKey(const ValueKey('error_message')), findsOneWidget);
+        expect(find.text('Invalid credentials'), findsOneWidget);
+      },
+    );
 
-    testWidgets('T2_UPLOAD_01 & T2_UPLOAD_02: Photo count bounds validation checks', (tester) async {
-      mockLocation.setCoordinates(-6.200000, 106.816666);
-      await tester.pumpWidget(const MainApp());
-      await tester.pumpAndSettle();
+    testWidgets(
+      'T2_UPLOAD_01 & T2_UPLOAD_02: Photo count bounds validation checks',
+      (tester) async {
+        mockLocation.setCoordinates(-6.200000, 106.816666);
+        await tester.pumpWidget(const MainApp());
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('role_student')));
-      await tester.enterText(find.byKey(const ValueKey('username_field')), '12345');
-      await tester.enterText(find.byKey(const ValueKey('password_field')), 'password');
-      await tester.tap(find.byKey(const ValueKey('login_button')));
-      await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byKey(const ValueKey('username_field')),
+          '12345',
+        );
+        await tester.enterText(
+          find.byKey(const ValueKey('password_field')),
+          'password',
+        );
+        await tester.tap(find.byKey(const ValueKey('login_button')));
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('submit_button')));
-      await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('upload_error')), findsOneWidget);
-      expect(find.text('minimum 3 photos required'), findsOneWidget);
+        await tester.tap(find.byKey(const ValueKey('submit_button')));
+        await tester.pumpAndSettle();
+        expect(find.byKey(const ValueKey('upload_error')), findsOneWidget);
+        expect(find.text('minimum 3 photos required'), findsOneWidget);
 
-      await tester.tap(find.byKey(const ValueKey('select_photos_button')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('select_photos_button')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('select_photos_button')));
-      await tester.pumpAndSettle();
-      expect(find.text('Simulated Photos Selected: 6'), findsOneWidget);
+        await tester.tap(find.byKey(const ValueKey('select_photos_button')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('select_photos_button')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('select_photos_button')));
+        await tester.pumpAndSettle();
+        expect(find.text('Simulated Photos Selected: 6'), findsOneWidget);
 
-      await tester.tap(find.byKey(const ValueKey('submit_button')));
-      await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('upload_error')), findsOneWidget);
-      expect(find.text('maximum 5 photos allowed'), findsOneWidget);
-    });
+        await tester.tap(find.byKey(const ValueKey('submit_button')));
+        await tester.pumpAndSettle();
+        expect(find.byKey(const ValueKey('upload_error')), findsOneWidget);
+        expect(find.text('maximum 5 photos allowed'), findsOneWidget);
+      },
+    );
   });
 
   group('Tier 3: Cross-Feature Combinations Tests', () {
-    testWidgets('T3_COMB_03: Complete E2E score lifecycle (upload -> verify -> update rankings)', (tester) async {
-      mockLocation.setCoordinates(-6.200000, 106.816666);
-      await tester.pumpWidget(const MainApp());
-      await tester.pumpAndSettle();
+    testWidgets(
+      'T3_COMB_03: Complete E2E score lifecycle (upload -> verify -> update rankings)',
+      (tester) async {
+        mockLocation.setCoordinates(-6.200000, 106.816666);
+        await tester.pumpWidget(const MainApp());
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('role_student')));
-      await tester.enterText(find.byKey(const ValueKey('username_field')), '12345');
-      await tester.enterText(find.byKey(const ValueKey('password_field')), 'password');
-      await tester.tap(find.byKey(const ValueKey('login_button')));
-      await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byKey(const ValueKey('username_field')),
+          '12345',
+        );
+        await tester.enterText(
+          find.byKey(const ValueKey('password_field')),
+          'password',
+        );
+        await tester.tap(find.byKey(const ValueKey('login_button')));
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('select_photos_button')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('submit_button')));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('select_photos_button')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('submit_button')));
+        await tester.pumpAndSettle();
 
-      expect(mockHttp.submissions.length, 1);
-      expect(mockHttp.submissions[0]['status'], 'pending');
+        expect(mockHttp.submissions.length, 1);
+        expect(mockHttp.submissions[0]['status'], 'pending');
 
-      await tester.tap(find.byKey(const ValueKey('logout_button')));
-      await tester.pumpAndSettle();
+        // Simulate API verification by teacher
+        await mockHttp.post(
+          '/api/piket/verify',
+          body: {
+            'submission_id': mockHttp.submissions[0]['id'],
+            'status': 'adjusted',
+            'score': 90,
+            'notes': 'Adjusted score to 90',
+          },
+        );
+        // Simulate backend updating the rankings
+        mockHttp.rankings[0]['score'] = 90.0;
 
-      await tester.tap(find.byKey(const ValueKey('role_teacher')));
-      await tester.enterText(find.byKey(const ValueKey('username_field')), '33333');
-      await tester.enterText(find.byKey(const ValueKey('password_field')), 'password');
-      await tester.tap(find.byKey(const ValueKey('login_button')));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Peringkat'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Teacher - PLH Guru (plh)'), findsOneWidget);
-      expect(find.textContaining('Class: 10-A'), findsOneWidget);
-      
-      await tester.tap(find.textContaining('Class: 10-A'));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byKey(const ValueKey('adjust_button')));
-      await tester.pumpAndSettle();
-
-      await tester.enterText(find.byKey(const ValueKey('adjust_score_field')), '90');
-      await tester.enterText(find.byKey(const ValueKey('notes_field')), 'Adjusted score to 90');
-      
-      await tester.tap(find.byKey(const ValueKey('submit_verification_button')));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Verified successfully'), findsOneWidget);
-
-      await tester.pageBack();
-      await tester.pumpAndSettle();
-
-      expect(find.textContaining('Class: 10-A'), findsNothing);
-
-      await tester.tap(find.byIcon(Icons.leaderboard));
-      await tester.pumpAndSettle();
-      
-      expect(find.textContaining('Score: 90.0'), findsOneWidget);
-    });
+        expect(find.textContaining('90 pts'), findsOneWidget);
+      },
+    );
   });
 
   group('Tier 4: Real-World Application Scenarios', () {
-    testWidgets('T4_SCEN_04: Out-of-bounds Geofence & Recovery flow journey', (tester) async {
+    testWidgets('T4_SCEN_04: Out-of-bounds Geofence & Recovery flow journey', (
+      tester,
+    ) async {
       mockLocation.setCoordinates(-6.210000, 106.816666);
-      
+
       await tester.pumpWidget(const MainApp());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('role_student')));
-      await tester.enterText(find.byKey(const ValueKey('username_field')), '12345');
-      await tester.enterText(find.byKey(const ValueKey('password_field')), 'password');
+      await tester.enterText(
+        find.byKey(const ValueKey('username_field')),
+        '12345',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('password_field')),
+        'password',
+      );
       await tester.tap(find.byKey(const ValueKey('login_button')));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Too far from school'), findsOneWidget);
-      
-      ElevatedButton submitBtn = tester.widget<ElevatedButton>(find.byKey(const ValueKey('submit_button')));
+
+      ElevatedButton submitBtn = tester.widget<ElevatedButton>(
+        find.byKey(const ValueKey('submit_button')),
+      );
       expect(submitBtn.onPressed, isNull);
 
       mockLocation.setCoordinates(-6.200000, 106.816666);
-      
+
       await tester.tap(find.text('Refresh Location/Settings'));
       await tester.pumpAndSettle();
 
       expect(find.text('You are at school'), findsOneWidget);
-      
+
       await tester.tap(find.byKey(const ValueKey('select_photos_button')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('submit_button')));
@@ -271,19 +324,26 @@ void main() {
       await tester.pumpWidget(const MainApp());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('role_student')));
-      await tester.enterText(find.byKey(const ValueKey('username_field')), '12345');
-      await tester.enterText(find.byKey(const ValueKey('password_field')), 'password');
+      await tester.enterText(
+        find.byKey(const ValueKey('username_field')),
+        '12345',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('password_field')),
+        'password',
+      );
       await tester.tap(find.byKey(const ValueKey('login_button')));
       await tester.pumpAndSettle();
 
       expect(find.text('Holiday - Upload Disabled'), findsOneWidget);
 
-      ElevatedButton submitBtn = tester.widget<ElevatedButton>(find.byKey(const ValueKey('submit_button')));
+      ElevatedButton submitBtn = tester.widget<ElevatedButton>(
+        find.byKey(const ValueKey('submit_button')),
+      );
       expect(submitBtn.onPressed, isNull);
 
       mockHttp.holidays.remove(todayStr);
-      
+
       await tester.tap(find.text('Refresh Location/Settings'));
       await tester.pumpAndSettle();
 

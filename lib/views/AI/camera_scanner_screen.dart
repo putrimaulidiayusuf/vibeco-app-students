@@ -62,7 +62,6 @@ class _CameraScannerScreenState extends State<CameraScannerScreen> {
 
       setState(() => _isInitialized = true);
 
-      // Start the image stream for real-time scanning
       _startImageStream();
     } catch (e) {
       if (mounted) {
@@ -75,17 +74,14 @@ class _CameraScannerScreenState extends State<CameraScannerScreen> {
     if (_streamActive || _controller == null) return;
 
     _controller!.startImageStream((CameraImage frame) {
-      // Just store the latest frame, don't process every one
       _latestFrame = frame;
     });
     _streamActive = true;
 
-    // Process a frame every 2.5 seconds
     _scanTimer = Timer.periodic(const Duration(milliseconds: 2500), (_) {
       _processLatestFrame();
     });
 
-    // Also process the first frame after a short delay
     Future.delayed(const Duration(milliseconds: 800), _processLatestFrame);
   }
 
@@ -96,7 +92,6 @@ class _CameraScannerScreenState extends State<CameraScannerScreen> {
     final frame = _latestFrame!;
 
     try {
-      // Convert CameraImage (YUV420) to RGB Image, then center-crop
       img.Image? rgbImage = _convertYUV420toImage(frame);
       if (rgbImage == null) {
         _isProcessing = false;
@@ -112,7 +107,6 @@ class _CameraScannerScreenState extends State<CameraScannerScreen> {
         rgbImage = img.copyRotate(rgbImage, angle: 180);
       }
 
-      // Center crop 70% of the image (matching the scan box overlay)
       final int cropSize = (rgbImage.width < rgbImage.height
               ? rgbImage.width
               : rgbImage.height) *
@@ -128,7 +122,6 @@ class _CameraScannerScreenState extends State<CameraScannerScreen> {
         height: cropSize,
       );
 
-      // Save to a temporary file for OnnxPredictor
       final tempDir = Directory.systemTemp;
       final tempFile = File(
           '${tempDir.path}/scan_frame_${DateTime.now().millisecondsSinceEpoch}.jpg');
@@ -136,7 +129,6 @@ class _CameraScannerScreenState extends State<CameraScannerScreen> {
 
       final result = await OnnxPredictor().predict(tempFile.path);
 
-      // Clean up temp file
       if (await tempFile.exists()) {
         await tempFile.delete();
       }
@@ -156,13 +148,12 @@ class _CameraScannerScreenState extends State<CameraScannerScreen> {
         });
       }
     } catch (e) {
-      // Silently continue scanning on error
+      // Continue silently
     } finally {
       _isProcessing = false;
     }
   }
 
-  /// Convert YUV420 CameraImage to img.Image (RGB)
   img.Image? _convertYUV420toImage(CameraImage cameraImage) {
     try {
       final int width = cameraImage.width;
@@ -187,7 +178,6 @@ class _CameraScannerScreenState extends State<CameraScannerScreen> {
           final int uVal = uPlane.bytes[uvIndex];
           final int vVal = vPlane.bytes[uvIndex];
 
-          // YUV to RGB conversion
           int r = (yVal + 1.370705 * (vVal - 128)).round().clamp(0, 255);
           int g = (yVal - 0.337633 * (uVal - 128) - 0.698001 * (vVal - 128))
               .round()
@@ -209,7 +199,6 @@ class _CameraScannerScreenState extends State<CameraScannerScreen> {
 
     setState(() => _isCapturing = true);
 
-    // Stop the image stream before taking a picture
     if (_streamActive) {
       _scanTimer?.cancel();
       _scanTimer = null;
@@ -217,10 +206,9 @@ class _CameraScannerScreenState extends State<CameraScannerScreen> {
       _streamActive = false;
     }
 
-    // Brief pause to let the camera stabilize after stopping stream
     await Future.delayed(const Duration(milliseconds: 300));
-    if (!mounted) return;
 
+    if (!mounted) return;
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -285,7 +273,6 @@ class _CameraScannerScreenState extends State<CameraScannerScreen> {
           SnackBar(content: Text("Gagal mengambil foto: $e")),
         );
         setState(() => _isCapturing = false);
-        // Restart stream
         _startImageStream();
       }
     }
@@ -332,14 +319,12 @@ class _CameraScannerScreenState extends State<CameraScannerScreen> {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Camera preview
           Transform.scale(
             scale: 1 / (_controller!.value.aspectRatio * deviceRatio),
             alignment: Alignment.topCenter,
             child: CameraPreview(_controller!),
           ),
 
-          // Scan box overlay
           Center(
             child: Container(
               width: size.width * 0.7,
@@ -356,7 +341,6 @@ class _CameraScannerScreenState extends State<CameraScannerScreen> {
             ),
           ),
 
-          // Top status bar
           Positioned(
             top: 60.0,
             left: 20.0,
@@ -412,7 +396,6 @@ class _CameraScannerScreenState extends State<CameraScannerScreen> {
             ),
           ),
 
-          // Bottom controls
           Positioned(
             bottom: 40.0,
             left: 0,

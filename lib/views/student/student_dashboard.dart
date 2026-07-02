@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/services/auth_service.dart';
-import 'praba_ai_screen.dart';
+import '../AI/praba_ai_screen.dart';
 import 'camera_upload_screen.dart';
 import 'clean_rank_screen.dart';
 import 'clean_track_screen.dart';

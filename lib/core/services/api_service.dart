@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import '../config/app_config.dart';
@@ -179,23 +180,64 @@ class ApiService {
   /// Get monthly class scores history.
   /// Uses /rankings?interval=monthly since /monthly-class-scores doesn't exist.
   Future<List<MonthlyClassScore>> getMonthlyClassScores(String token) async {
-    final now = DateTime.now();
-    final url = AppConfig.buildUrl('/rankings?interval=monthly&year=${now.year}&month=${now.month}');
+    final primaryUrl = AppConfig.buildUrl('/monthly-class-scores');
     final headers = _getHeaders(token);
     headers['Cache-Control'] = 'no-cache';
-    final response = await locator.httpService.get(
-      url,
-      headers: headers,
-    );
 
-    if (response.statusCode == 200) {
-      final List<dynamic> list = jsonDecode(response.body) as List<dynamic>;
-      return list
-          .map((item) => MonthlyClassScore.fromJson(item as Map<String, dynamic>))
-          .toList();
-    } else {
-      throw Exception('Gagal mengambil nilai bulanan kelas.');
+    try {
+      final response = await locator.httpService.get(
+        primaryUrl,
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> list = jsonDecode(response.body) as List<dynamic>;
+        return list
+            .map((item) => MonthlyClassScore.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
+    } catch (e) {
+      debugPrint("Error fetching from /monthly-class-scores: $e");
     }
+
+    // Fallback if primary endpoint fails or is 404:
+    // Query /rankings?interval=monthly for the last 6 months to get historical monthly scores.
+    final List<MonthlyClassScore> combinedScores = [];
+    final now = DateTime.now();
+    
+    // Fetch concurrently for the last 6 months
+    final monthsToFetch = 6;
+    final List<Future<http.Response>> requests = [];
+    final List<DateTime> dates = [];
+
+    for (int i = 0; i < monthsToFetch; i++) {
+      final targetDate = DateTime(now.year, now.month - i, 1);
+      dates.add(targetDate);
+      final url = AppConfig.buildUrl('/rankings?interval=monthly&year=${targetDate.year}&month=${targetDate.month}');
+      requests.add(locator.httpService.get(url, headers: headers));
+    }
+
+    try {
+      final responses = await Future.wait(requests);
+      for (int i = 0; i < responses.length; i++) {
+        final res = responses[i];
+        final date = dates[i];
+        if (res.statusCode == 200) {
+          final List<dynamic> list = jsonDecode(res.body) as List<dynamic>;
+          for (final item in list) {
+            final map = Map<String, dynamic>.from(item as Map);
+            // Ensure month and year are set correctly for fallback results
+            map['month'] = date.month;
+            map['year'] = date.year;
+            combinedScores.add(MonthlyClassScore.fromJson(map));
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint("Error fetching/parsing fallback monthly scores: $e");
+    }
+
+    return combinedScores;
   }
 
   /// Get specific submission details.

@@ -33,8 +33,8 @@ class PrabaAiScreen extends StatelessWidget {
           // Mascot image - tanpa background/border, diperbesar
           Image.asset(
             'assets/images/maskothello.png',
-            width: 210,
-            height: 210,
+            width: 280,
+            height: 280,
             fit: BoxFit.contain,
           ),
           const SizedBox(height: 20),
@@ -222,11 +222,11 @@ class PrabaAiScreen extends StatelessWidget {
                   children: [
                     // Avatar maskotprofil - lebih besar & lebih zoom
                     SizedBox(
-                      width: 70,
-                      height: 70,
+                      width: 90,
+                      height: 90,
                       child: ClipOval(
                         child: Transform.scale(
-                          scale: 1.0,
+                          scale: 1.25,
                           child: Image.asset(
                             'assets/images/maskotprofil.png',
                             fit: BoxFit.cover,
