@@ -24,3 +24,4 @@ plugins {
 }
 
 include(":app")
+rootProject.name = "vibeco_app_students"

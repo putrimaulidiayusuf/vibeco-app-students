@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import 'praba_chatbot_screen.dart';
+import 'maskot_bangga_video_player.dart';
 
 class PrabaAiScreen extends StatelessWidget {
   final bool asRoute;
@@ -47,7 +48,7 @@ class PrabaAiScreen extends StatelessWidget {
               color: Colors.grey.shade600,
             ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 48),
 
           // ─── MAIN CHAT CARD ───
           _buildMainChatCard(context),
@@ -220,21 +221,7 @@ class PrabaAiScreen extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    // Avatar maskotprofil - lebih besar & lebih zoom
-                    SizedBox(
-                      width: 90,
-                      height: 90,
-                      child: ClipOval(
-                        child: Transform.scale(
-                          scale: 1.25,
-                          child: Image.asset(
-                            'assets/images/maskotprofil.png',
-                            fit: BoxFit.cover,
-                            alignment: const Alignment(0, -0.2),
-                          ),
-                        ),
-                      ),
-                    ),
+                    const MaskotBanggaVideoPlayer(size: 90),
                     const SizedBox(width: 14),
                     const Expanded(
                       child: Column(
