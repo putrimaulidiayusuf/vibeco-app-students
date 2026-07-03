@@ -167,7 +167,17 @@ class SmartCheckViewModel extends ChangeNotifier {
 
       // 8. Check if picket has already been submitted today
       final todaySub = _weeklySubmissions.firstWhere(
-        (sub) => sub.date == todayDateStr,
+        (sub) {
+          try {
+            final subDate = DateTime.parse(sub.date);
+            final today = DateTime.now();
+            return subDate.year == today.year &&
+                subDate.month == today.month &&
+                subDate.day == today.day;
+          } catch (_) {
+            return false;
+          }
+        },
         orElse: () => PiketSubmission(id: -1, date: '', status: ''),
       );
 
