@@ -25,13 +25,15 @@ class _SplashScreenState extends State<SplashScreen>
       duration: const Duration(milliseconds: 1600),
     );
 
-    _fade = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeOut),
-    );
+    _fade = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
 
-    _scale = Tween<double>(begin: 0.65, end: 1.0).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeOutBack),
-    );
+    _scale = Tween<double>(
+      begin: 0.65,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutBack));
 
     _ctrl.forward();
 
@@ -43,10 +45,7 @@ class _SplashScreenState extends State<SplashScreen>
             pageBuilder: (_, _, _) => const AuthGate(),
             transitionsBuilder: (_, anim, _, child) {
               return FadeTransition(
-                opacity: CurvedAnimation(
-                  parent: anim,
-                  curve: Curves.easeInOut,
-                ),
+                opacity: CurvedAnimation(parent: anim, curve: Curves.easeInOut),
                 child: child,
               );
             },
@@ -73,10 +72,7 @@ class _SplashScreenState extends State<SplashScreen>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF06241B),
-              Color(0xFF0F4D3A),
-            ],
+            colors: [Color(0xFF06241B), Color(0xFF0F4D3A)],
           ),
         ),
         child: Center(
