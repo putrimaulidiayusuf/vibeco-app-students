@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/services/auth_service.dart';
+import '../AI/maskot_marah_video_player.dart';
 
 class AccessDeniedScreen extends StatelessWidget {
   const AccessDeniedScreen({super.key});
@@ -36,18 +37,9 @@ class AccessDeniedScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.08),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      width: 2,
-                    ),
+                    borderRadius: BorderRadius.circular(32),
                   ),
-                  child: Image.asset(
-                    'assets/images/maskotbingung.png',
-                    width: 200,
-                    height: 200,
-                    fit: BoxFit.contain,
-                  ),
+                  child: const MaskotMarahVideoPlayer(size: 200),
                 ),
                 const SizedBox(height: 40),
 

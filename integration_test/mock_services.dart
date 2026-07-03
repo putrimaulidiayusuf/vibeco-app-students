@@ -162,6 +162,11 @@ class MockHttpService implements HttpService {
         'status': 'pending',
         'notes': '',
         'final_score': null,
+        'submitted_by': currentUser?['name'] ?? 'Student Ten',
+        'student': {
+          'id': currentUser?['id'] ?? 1,
+          'name': currentUser?['name'] ?? 'Student Ten',
+        },
       };
       submissions.add(submission);
       return http.Response(jsonEncode(submission), 201);
