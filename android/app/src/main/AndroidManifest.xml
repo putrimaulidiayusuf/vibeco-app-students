@@ -1,7 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
-
-    <!-- Internet -->
     <uses-permission android:name="android.permission.INTERNET" />
 
     <!-- Location -->
@@ -15,13 +13,10 @@
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
-
-    <uses-permission
-        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="29"
         tools:replace="android:maxSdkVersion" />
-
-    <!-- Android 13+ -->
+    <!-- Diperlukan untuk akses galeri pada Android 13+ -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
 
     <application
