@@ -2,12 +2,13 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/services/auth_service.dart';
 import '../../core/services/onnx_predictor.dart';
 import '../../core/services/gemini_service.dart';
 import '../../core/theme/app_theme.dart';
 import 'camera_scanner_screen.dart';
-
 class PrabaChatBotScreen extends StatefulWidget {
   const PrabaChatBotScreen({super.key});
 
@@ -26,13 +27,23 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
   @override
   void initState() {
     super.initState();
-    _loadChatHistory();
+    // Tunggu frame pertama agar context tersedia untuk Provider
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadChatHistory();
+    });
+  }
+
+  /// Key unik per akun berdasarkan user ID
+  String _chatKey() {
+    final auth = Provider.of<AuthService>(context, listen: false);
+    final userId = auth.user?.id?.toString() ?? 'guest';
+    return 'praba_chat_history_$userId';
   }
 
   Future<void> _loadChatHistory() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final historyStr = prefs.getString('praba_chat_history');
+      final historyStr = prefs.getString(_chatKey());
       if (historyStr != null && historyStr.isNotEmpty) {
         final List<dynamic> decoded = jsonDecode(historyStr);
         setState(() {
@@ -54,7 +65,7 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
   Future<void> _saveChatHistory() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('praba_chat_history', jsonEncode(_messages));
+      await prefs.setString(_chatKey(), jsonEncode(_messages));
     } catch (e) {
       debugPrint("Failed to save chat history: $e");
     }
@@ -276,7 +287,7 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
                 _messages.clear();
               });
               final prefs = await SharedPreferences.getInstance();
-              await prefs.remove('praba_chat_history');
+              await prefs.remove(_chatKey());
               _addAiMessage(
                 "Halo! Saya *PRABA AI*, Asisten Cerdas Kebersihan VibeCo.\n\n"
                 "Kirimkan foto sampah dari Kamera Pemindai atau Galeri Anda untuk mendeteksi kategori dan mendapatkan panduan pengolahannya!"
@@ -464,9 +475,9 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
                             height: 28,
                             child: ClipOval(
                               child: Transform.scale(
-                                scale: 1.0,
+                                scale: 1.1,
                                 child: Image.asset(
-                                  'assets/images/maskotprofil.png',
+                                  'assets/images/maskotbingung.png',
                                   fit: BoxFit.cover,
                                   alignment: const Alignment(0, -0.2),
                                 ),

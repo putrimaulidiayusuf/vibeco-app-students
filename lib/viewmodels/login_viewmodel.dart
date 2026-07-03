@@ -41,11 +41,42 @@ class LoginViewModel extends ChangeNotifier {
       await authService.saveSession(token, user);
       return true;
     } catch (e) {
-      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      _errorMessage = _friendlyError(e.toString());
       return false;
     } finally {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  String _friendlyError(String raw) {
+    final msg = raw.replaceAll('Exception: ', '').toLowerCase();
+    if (msg.contains('invalid') ||
+        msg.contains('credentials') ||
+        msg.contains('unauthorized') ||
+        msg.contains('401') ||
+        msg.contains('password') ||
+        msg.contains('wrong') ||
+        msg.contains('incorrect')) {
+      return 'NIS atau kata sandi salah. Silakan periksa kembali.';
+    } else if (msg.contains('not found') ||
+        msg.contains('404') ||
+        msg.contains('no user') ||
+        msg.contains('nis')) {
+      return 'NIS tidak ditemukan. Pastikan NIS sudah benar.';
+    } else if (msg.contains('too many') ||
+        msg.contains('429') ||
+        msg.contains('throttle')) {
+      return 'Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi.';
+    } else if (msg.contains('network') ||
+        msg.contains('socket') ||
+        msg.contains('connection') ||
+        msg.contains('timeout') ||
+        msg.contains('timed out')) {
+      return 'Koneksi gagal. Periksa jaringan internet kamu.';
+    } else if (msg.contains('server') || msg.contains('500')) {
+      return 'Server sedang bermasalah. Coba beberapa saat lagi.';
+    }
+    return 'Login gagal. Pastikan NIS dan kata sandi benar.';
   }
 }

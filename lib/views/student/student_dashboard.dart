@@ -603,16 +603,17 @@ class _StudentDashboardState extends State<StudentDashboard>
   Widget _buildNotchNavBar() {
     if (_hideNavbar) return const SizedBox.shrink();
     final screenWidth = MediaQuery.of(context).size.width;
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return SizedBox(
-      height: 100,
+      height: 100 + bottomPadding,
       child: Stack(
         clipBehavior: Clip.none,
         alignment: Alignment.bottomCenter,
         children: [
           // Navbar background with REAL concave notch
           CustomPaint(
-            size: Size(screenWidth, 80),
+            size: Size(screenWidth, 80 + bottomPadding),
             painter: _NotchNavbarPainter(
               bgColor: Colors.white,
               shadowColor: AppColors.emeraldDark.withValues(alpha: 0.06),
@@ -621,7 +622,7 @@ class _StudentDashboardState extends State<StudentDashboard>
 
           // Nav items positioned inside the navbar
           Positioned(
-            bottom: 12,
+            bottom: 12 + bottomPadding,
             left: 0,
             right: 0,
             child: Row(
