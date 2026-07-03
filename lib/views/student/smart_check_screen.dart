@@ -1,174 +1,255 @@
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:permission_handler/permission_handler.dart';
-import '../../core/theme/app_theme.dart';
-import '../../core/services/auth_service.dart';
-import '../../core/config/app_config.dart';
+import '../../core/models/settings_model.dart';
 import '../../core/models/piket_team_model.dart';
-import '../../viewmodels/student/smart_check_viewmodel.dart';
-import '../../widgets/universal_image/universal_image.dart';
+import '../../core/models/submission_model.dart';
+import '../../core/services/api_service.dart';
+import '../../core/services/service_locator.dart';
 
-class SmartCheckScreen extends StatefulWidget {
-  const SmartCheckScreen({super.key});
+class SmartCheckViewModel extends ChangeNotifier {
+  final ApiService _apiService = ApiService();
+  final ImagePicker _picker = ImagePicker();
 
-  @override
-  State<SmartCheckScreen> createState() => _SmartCheckScreenState();
-}
+  bool _isLoading = true;
+  bool get isLoading => _isLoading;
 
-class _SmartCheckScreenState extends State<SmartCheckScreen> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkAndRequestPermissions();
-    });
-  }
+  bool _isSubmitting = false;
+  bool get isSubmitting => _isSubmitting;
 
-  Future<void> _checkAndRequestPermissions() async {
-    final locationStatus = await Permission.locationWhenInUse.status;
-    final cameraStatus = await Permission.camera.status;
+  String? _errorMessage;
+  String? get errorMessage => _errorMessage;
 
-    if (locationStatus.isDenied || cameraStatus.isDenied) {
-      if (mounted) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (dialogContext) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            title: const Row(
-              children: [
-                Icon(Icons.security, color: AppTheme.primaryGreen),
-                SizedBox(width: 8),
-                Text('Izin Akses Aplikasi'),
-              ],
-            ),
-            content: const Text(
-              'Aplikasi VibeCo memerlukan izin Lokasi (untuk memverifikasi kehadiran di geofence sekolah) dan Kamera (bila Anda mengunggah bukti foto piket).',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(dialogContext);
-                },
-                child: const Text(
-                  'Batal',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryGreen,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                onPressed: () async {
-                  Navigator.pop(dialogContext);
+  AppSettings? _settings;
+  AppSettings? get settings => _settings;
 
-                  // Request permissions
-                  await [
-                    Permission.locationWhenInUse,
-                    Permission.camera,
-                  ].request();
+  PiketTeam? _myPiketTeam;
+  PiketTeam? get myPiketTeam => _myPiketTeam;
 
-                  if (!mounted) return;
-                  final auth = Provider.of<AuthService>(context, listen: false);
-                  final token = auth.token;
-                  if (token != null && mounted) {
-                    final vm = Provider.of<SmartCheckViewModel>(
-                      context,
-                      listen: false,
-                    );
-                    vm.loadStatusAndConfig(token);
-                  }
-                },
-                child: const Text('Izinkan'),
-              ),
-            ],
-          ),
-        );
+  double? _distance;
+  double? get distance => _distance;
+
+  bool _isInsideGeofence = false;
+  bool get isInsideGeofence => _isInsideGeofence;
+
+  bool _isWithinTimeWindow = false;
+  bool get isWithinTimeWindow => _isWithinTimeWindow;
+
+  bool _isHoliday = false;
+  bool get isHoliday => _isHoliday;
+
+  bool _isOnDutyToday = false;
+  bool get isOnDutyToday => _isOnDutyToday;
+
+  bool _isAlreadySubmittedToday = false;
+  bool get isAlreadySubmittedToday => _isAlreadySubmittedToday;
+
+  String? _submittedByName;
+  String? get submittedByName => _submittedByName;
+
+  String _todayDayName = '';
+  String get todayDayName => _todayDayName;
+
+  final List<XFile> _selectedImages = [];
+  List<XFile> get selectedImages => _selectedImages;
+
+  int? _aiScore;
+  int? get aiScore => _aiScore;
+
+  List<String> _findings = [];
+  List<String> get findings => _findings;
+
+  List<PiketSubmission> _weeklySubmissions = [];
+  List<PiketSubmission> get weeklySubmissions => _weeklySubmissions;
+
+  List<PiketTeam> _schedules = [];
+  List<PiketTeam> get schedules => _schedules;
+
+  Map<String, double> _weeklyScores = {
+    'Senin': 0.0,
+    'Selasa': 0.0,
+    'Rabu': 0.0,
+    'Kamis': 0.0,
+    'Jumat': 0.0,
+  };
+  Map<String, double> get weeklyScores => _weeklyScores;
+
+  bool get canUpload =>
+      _isInsideGeofence &&
+      _isWithinTimeWindow &&
+      !_isHoliday &&
+      _isOnDutyToday &&
+      !_isAlreadySubmittedToday;
+
+  Future<void> loadStatusAndConfig(String token) async {
+    _isLoading = true;
+    _errorMessage = null;
+    _aiScore = null;
+    _findings = [];
+    _isAlreadySubmittedToday = false;
+    _submittedByName = null;
+    notifyListeners();
+
+    try {
+      // 1. Get Settings & Holidays
+      _settings = await _apiService.getSettings(token);
+      final holidays = await _apiService.getHolidays(token);
+
+      // 2. Get Student's Piket Team for today from verify API
+      _todayDayName = DateFormat(
+        'EEEE',
+      ).format(DateTime.now()); // e.g. "Monday"
+
+      try {
+        _myPiketTeam = await _apiService.verifyPiketToday(token);
+        final studentProfile = await _apiService.getStudentProfile(token);
+        final currentNis = studentProfile.nis;
+        final currentId = studentProfile.id;
+
+        if (_myPiketTeam != null) {
+          _isOnDutyToday = _myPiketTeam!.members.any(
+            (m) => m.nis == currentNis || m.id == currentId,
+          );
+        } else {
+          _isOnDutyToday = false;
+        }
+      } catch (_) {
+        _isOnDutyToday = false;
       }
-    }
-  }
 
-  String translateDay(String englishDay) {
-    switch (englishDay.toLowerCase()) {
-      case 'monday':
-        return 'Senin';
-      case 'tuesday':
-        return 'Selasa';
-      case 'wednesday':
-        return 'Rabu';
-      case 'thursday':
-        return 'Kamis';
-      case 'friday':
-        return 'Jumat';
-      case 'saturday':
-        return 'Sabtu';
-      case 'sunday':
-        return 'Minggu';
-      default:
-        return englishDay;
-    }
-  }
+      // 3. Get Current Position & Calculate Distance
+      final position = await locator.locationService.getCurrentPosition();
+      if (position != null && _settings != null) {
+        _distance = locator.locationService.distanceBetween(
+          position.latitude,
+          position.longitude,
+          _settings!.latitude,
+          _settings!.longitude,
+        );
+        _isInsideGeofence = _distance! <= _settings!.radius;
+      } else {
+        _isInsideGeofence = false;
+      }
 
-  String _getEnglishDayName(int weekday) {
-    switch (weekday) {
-      case DateTime.monday:
-        return 'Monday';
-      case DateTime.tuesday:
-        return 'Tuesday';
-      case DateTime.wednesday:
-        return 'Wednesday';
-      case DateTime.thursday:
-        return 'Thursday';
-      case DateTime.friday:
-        return 'Friday';
-      case DateTime.saturday:
-        return 'Saturday';
-      case DateTime.sunday:
-        return 'Sunday';
-      default:
-        return '';
-    }
-  }
+      // 4. Verify Time Window
+      if (_settings != null) {
+        final now = DateTime.now();
+        final startParts = _settings!.startTime.split(':');
+        final endParts = _settings!.endTime.split(':');
+        if (startParts.length >= 2 && endParts.length >= 2) {
+          final startMin =
+              int.parse(startParts[0]) * 60 + int.parse(startParts[1]);
+          final endMin = int.parse(endParts[0]) * 60 + int.parse(endParts[1]);
+          final nowMin = now.hour * 60 + now.minute;
+          _isWithinTimeWindow = nowMin >= startMin && nowMin <= endMin;
+        }
+      }
 
-  String _getTeamMembersStr(String dateStr, List<PiketTeam> schedules) {
-    try {
-      final date = DateTime.parse(dateStr);
-      final englishDay = _getEnglishDayName(date.weekday);
-      final team = schedules.firstWhere(
-        (t) => t.day?.toLowerCase() == englishDay.toLowerCase(),
+      // 5. Verify Holiday / Weekend (Weekend is holiday)
+      final todayDateStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      final isWeekend =
+          DateTime.now().weekday == DateTime.saturday ||
+          DateTime.now().weekday == DateTime.sunday;
+      final isHolidayRegistered = holidays.any(
+        (h) => h['date'] == todayDateStr,
       );
-      if (team.members.isEmpty) return 'Tidak ada jadwal piket';
-      return team.members.map((m) => m.name).join(', ');
-    } catch (_) {
-      return 'Tidak terjadwal';
+      _isHoliday = isHolidayRegistered || (isWeekend && !_isOnDutyToday);
+
+      // 6. Fetch schedules to map team members in history
+      try {
+        _schedules = await _apiService.getSchedules(token);
+      } catch (_) {
+        _schedules = [];
+      }
+
+      // 7. Fetch weekly submissions
+      await fetchWeeklyData(token);
+
+      // 8. Check if picket has already been submitted today
+      final todaySub = _weeklySubmissions.firstWhere(
+        (sub) {
+          try {
+            final subDate = DateTime.parse(sub.date);
+            final today = DateTime.now();
+            return subDate.year == today.year &&
+                subDate.month == today.month &&
+                subDate.day == today.day;
+          } catch (_) {
+            return false;
+          }
+        },
+        orElse: () => PiketSubmission(id: -1, date: '', status: ''),
+      );
+
+      if (todaySub.id != -1) {
+        _isAlreadySubmittedToday = true;
+        _submittedByName = todaySub.submittedBy;
+      } else {
+        _isAlreadySubmittedToday = false;
+        _submittedByName = null;
+      }
+    } catch (e) {
+      _errorMessage =
+          'Gagal memuat status & konfigurasi: ${e.toString().replaceAll('Exception: ', '')}';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
-  String _formatTime(String? createdAtStr) {
-    if (createdAtStr == null) return '--:--';
+  Future<void> fetchWeeklyData(String token) async {
     try {
-      final dateTime = DateTime.parse(createdAtStr).toLocal();
-      return DateFormat('HH:mm').format(dateTime);
-    } catch (_) {
-      return '--:--';
-    }
-  }
+      final allSubmissions = await _apiService.getSubmissions(token);
 
-  String _formatFullDate(String dateStr) {
-    try {
-      final date = DateTime.parse(dateStr);
-      final dayName = _getDayNameIndonesian(date.weekday);
-      final monthName = _getMonthNameIndonesian(date.month);
-      return '$dayName, ${date.day} $monthName ${date.year}';
-    } catch (_) {
-      return dateStr;
+      // Find current week range (Monday to Sunday)
+      final now = DateTime.now();
+      final currentWeekday = now.weekday; // 1 = Monday, 7 = Sunday
+      final startOfWeek = now.subtract(Duration(days: currentWeekday - 1));
+      // Zero out time
+      final monday = DateTime(
+        startOfWeek.year,
+        startOfWeek.month,
+        startOfWeek.day,
+      );
+      final sunday = monday.add(
+        const Duration(days: 6, hours: 23, minutes: 59, seconds: 59),
+      );
+
+      // Filter submissions for this week
+      _weeklySubmissions = allSubmissions.where((sub) {
+        try {
+          final subDate = DateTime.parse(sub.date);
+          return subDate.isAfter(monday.subtract(const Duration(seconds: 1))) &&
+              subDate.isBefore(sunday.add(const Duration(seconds: 1)));
+        } catch (_) {
+          return false;
+        }
+      }).toList();
+
+      // Sort weekly submissions by date descending
+      _weeklySubmissions.sort((a, b) => b.date.compareTo(a.date));
+
+      // Reset scores map
+      _weeklyScores = {
+        'Senin': 0.0,
+        'Selasa': 0.0,
+        'Rabu': 0.0,
+        'Kamis': 0.0,
+        'Jumat': 0.0,
+      };
+
+      // Populate scores (Mon-Fri)
+      for (final sub in _weeklySubmissions) {
+        try {
+          final subDate = DateTime.parse(sub.date);
+          final dayName = _getDayNameIndonesian(subDate.weekday);
+          if (_weeklyScores.containsKey(dayName)) {
+            _weeklyScores[dayName] = sub.displayScore.toDouble();
+          }
+        } catch (_) {}
+      }
+    } catch (e) {
+      debugPrint('Error loading weekly scores: $e');
     }
   }
 
@@ -193,728 +274,119 @@ class _SmartCheckScreenState extends State<SmartCheckScreen> {
     }
   }
 
-  String _getMonthNameIndonesian(int month) {
-    switch (month) {
-      case 1:
-        return 'Januari';
-      case 2:
-        return 'Februari';
-      case 3:
-        return 'Maret';
-      case 4:
-        return 'April';
-      case 5:
-        return 'Mei';
-      case 6:
-        return 'Juni';
-      case 7:
-        return 'Juli';
-      case 8:
-        return 'Agustus';
-      case 9:
-        return 'September';
-      case 10:
-        return 'Oktober';
-      case 11:
-        return 'November';
-      case 12:
-        return 'Desember';
-      default:
-        return '';
-    }
-  }
+  Future<String?> pickImages() async {
+    try {
+      final List<XFile> images = await _picker.pickMultiImage(
+        imageQuality: 80,
+        maxWidth: 1080,
+      );
 
-  Widget _buildStatusBadge(String status) {
-    Color color;
-    String text;
-
-    switch (status) {
-      case 'approved':
-        color = AppTheme.success;
-        text = 'Disetujui';
-        break;
-      case 'adjusted':
-        color = AppTheme.primaryLight;
-        text = 'Disesuaikan';
-        break;
-      case 'rejected':
-        color = AppTheme.error;
-        text = 'Ditolak';
-        break;
-      default:
-        color = AppTheme.warning;
-        text = 'Menunggu';
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-          color: color,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatusCard({
-    required IconData icon,
-    required String title,
-    required String value,
-    required bool isValid,
-    String? helper,
-  }) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: isValid
-                    ? AppTheme.success.withValues(alpha: 0.1)
-                    : AppTheme.error.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                color: isValid ? AppTheme.success : AppTheme.error,
-                size: 28,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: Colors.black54,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    value,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: isValid ? AppTheme.primaryDark : AppTheme.error,
-                    ),
-                  ),
-                  if (helper != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      helper,
-                      style: const TextStyle(fontSize: 11, color: Colors.grey),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            Icon(
-              isValid ? Icons.check_circle_rounded : Icons.cancel_rounded,
-              color: isValid ? AppTheme.success : AppTheme.error,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final auth = Provider.of<AuthService>(context, listen: false);
-    final token = auth.token;
-
-    if (token == null) {
-      return const Center(child: Text('Sesi habis. Silakan login kembali.'));
-    }
-
-    return ChangeNotifierProvider<SmartCheckViewModel>(
-      create: (context) {
-        final vm = SmartCheckViewModel();
-        vm.loadStatusAndConfig(token);
-        return vm;
-      },
-      child: Consumer<SmartCheckViewModel>(
-        builder: (context, viewModel, child) {
-          if (viewModel.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          return RefreshIndicator(
-            onRefresh: () => viewModel.loadStatusAndConfig(token),
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Header
-                  Text(
-                    'VibeCo SmartCheck',
-                    style: Theme.of(context).textTheme.headlineMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Status kelayakan piket dan riwayat laporan kebersihan mingguan kelas Anda.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.black54),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Status Cards
-                  _buildStatusCard(
-                    icon: Icons.my_location_rounded,
-                    title: 'Lokasi Anda (Geofence)',
-                    value: viewModel.isInsideGeofence
-                        ? 'Di Sekolah'
-                        : 'Di luar sekolah (${viewModel.distance?.toStringAsFixed(1) ?? "-"}m)',
-                    isValid: viewModel.isInsideGeofence,
-                    helper: viewModel.settings != null
-                        ? 'Maksimal ${viewModel.settings!.radius.toStringAsFixed(0)} meter dari koordinat sekolah'
-                        : null,
-                  ),
-                  const SizedBox(height: 10),
-                  _buildStatusCard(
-                    icon: Icons.access_time_rounded,
-                    title: 'Waktu Pengiriman',
-                    value: viewModel.isWithinTimeWindow ? 'Buka' : 'Tutup',
-                    isValid: viewModel.isWithinTimeWindow,
-                    helper: viewModel.settings != null
-                        ? 'Batas waktu: ${viewModel.settings!.startTime} s/d ${viewModel.settings!.endTime} WIB'
-                        : null,
-                  ),
-                  const SizedBox(height: 10),
-                  _buildStatusCard(
-                    icon: Icons.calendar_today_rounded,
-                    title: 'Hari Kerja / Libur',
-                    value: viewModel.isHoliday
-                        ? 'Hari Libur / Akhir Pekan'
-                        : 'Hari Sekolah',
-                    isValid: !viewModel.isHoliday,
-                    helper:
-                        'Pengiriman dinonaktifkan pada hari libur dan akhir pekan',
-                  ),
-                  const SizedBox(height: 10),
-                  _buildStatusCard(
-                    icon: Icons.assignment_ind_rounded,
-                    title: 'Jadwal Piket Anda',
-                    value: viewModel.isOnDutyToday
-                        ? 'Hari Ini Piket'
-                        : 'Tidak Piket Hari Ini',
-                    isValid: viewModel.isOnDutyToday,
-                    helper: 'Hari Ini: ${translateDay(viewModel.todayDayName)}',
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Weekly Bar Chart Widget
-                  WeeklyBarChart(scores: viewModel.weeklyScores),
-                  const SizedBox(height: 24),
-
-                  // History Section Title
-                  const Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 8.0,
-                      vertical: 8.0,
-                    ),
-                    child: Text(
-                      'Riwayat Laporan Minggu Ini',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.primaryDark,
-                      ),
-                    ),
-                  ),
-
-                  if (viewModel.weeklySubmissions.isEmpty)
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: Column(
-                          children: [
-                            Icon(
-                              Icons.history_rounded,
-                              size: 48,
-                              color: Colors.grey.shade400,
-                            ),
-                            const SizedBox(height: 12),
-                            const Text(
-                              'Belum ada laporan minggu ini.',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black54,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    )
-                  else
-                    ...viewModel.weeklySubmissions.map((sub) {
-                      final teamMembers = _getTeamMembersStr(
-                        sub.date,
-                        viewModel.schedules,
-                      );
-                      final uploadTime = _formatTime(sub.createdAt);
-                      final displayScore = sub.displayScore;
-
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 14),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          _formatFullDate(sub.date),
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 15,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          'Diunggah oleh: ${sub.submittedBy ?? "Siswa"} • Jam $uploadTime WIB',
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  _buildStatusBadge(sub.status),
-                                ],
-                              ),
-                              const Divider(height: 20),
-
-                              // Photo thumbnails
-                              if (sub.photoUrls.isNotEmpty) ...[
-                                const Text(
-                                  'Foto Dokumentasi:',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black54,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                SizedBox(
-                                  height: 80,
-                                  child: ListView.builder(
-                                    scrollDirection: Axis.horizontal,
-                                    itemCount: sub.photoUrls.length,
-                                    itemBuilder: (context, pIndex) {
-                                      final path = sub.photoUrls[pIndex];
-                                      final imageUrl = path.startsWith('http')
-                                          ? path
-                                          : '${AppConfig.baseUrl}/storage/$path';
-
-                                      // Label of the photo based on index
-                                      String slotLabel = 'Foto ${pIndex + 1}';
-                                      if (pIndex == 0) slotLabel = 'Depan';
-                                      if (pIndex == 1) slotLabel = 'Belakang';
-                                      if (pIndex == 2) slotLabel = 'Tambahan';
-
-                                      return Padding(
-                                        padding: const EdgeInsets.only(
-                                          right: 8.0,
-                                        ),
-                                        child: Column(
-                                          children: [
-                                            Expanded(
-                                              child: ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(
-                                                      AppTheme.radiusSmall,
-                                                    ),
-                                                child: UniversalImage(
-                                                  imageUrl: imageUrl,
-                                                  width: 80,
-                                                  fit: BoxFit.cover,
-                                                  errorBuilder:
-                                                      (
-                                                        context,
-                                                        error,
-                                                        stackTrace,
-                                                      ) {
-                                                        return Container(
-                                                          width: 80,
-                                                          color: Colors
-                                                              .grey
-                                                              .shade200,
-                                                          child: const Icon(
-                                                            Icons
-                                                                .broken_image_rounded,
-                                                            color: Colors.grey,
-                                                          ),
-                                                        );
-                                                      },
-                                                ),
-                                              ),
-                                            ),
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              slotLabel,
-                                              style: const TextStyle(
-                                                fontSize: 9,
-                                                color: Colors.grey,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                              ],
-
-                              // Duty team info
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Icon(
-                                    Icons.group_rounded,
-                                    size: 16,
-                                    color: AppTheme.primaryGreen,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: RichText(
-                                      text: TextSpan(
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.black87,
-                                        ),
-                                        children: [
-                                          const TextSpan(
-                                            text: 'Petugas Piket Hari Itu: ',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          TextSpan(text: teamMembers),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 10),
-
-                              // Score section
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'AI Score: ${sub.aiScore ?? "-"}',
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.black54,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Row(
-                                        children: [
-                                          const Text(
-                                            'Skor Akhir: ',
-                                            style: TextStyle(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          Text(
-                                            sub.isPending
-                                                ? 'Menunggu Validasi'
-                                                : displayScore.toString(),
-                                            style: TextStyle(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.bold,
-                                              color: sub.isPending
-                                                  ? Colors.orange
-                                                  : (displayScore >= 75
-                                                        ? AppTheme.success
-                                                        : AppTheme.error),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 8,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppTheme.primaryGreen.withValues(
-                                        alpha: 0.1,
-                                      ),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Text(
-                                      displayScore.toString(),
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: 18,
-                                        color: AppTheme.primaryGreen,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-
-                              // AI Findings
-                              if (sub.findings.isNotEmpty) ...[
-                                const SizedBox(height: 10),
-                                Wrap(
-                                  spacing: 6,
-                                  runSpacing: 4,
-                                  children: sub.findings.map((finding) {
-                                    return Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 3,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.orange.withValues(
-                                          alpha: 0.1,
-                                        ),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: Text(
-                                        finding,
-                                        style: const TextStyle(
-                                          fontSize: 10,
-                                          color: Colors.orange,
-                                        ),
-                                      ),
-                                    );
-                                  }).toList(),
-                                ),
-                              ],
-
-                              // Validation notes
-                              if (!sub.isPending &&
-                                  sub.notes != null &&
-                                  sub.notes!.isNotEmpty) ...[
-                                const SizedBox(height: 12),
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey.shade50,
-                                    borderRadius: BorderRadius.circular(
-                                      AppTheme.radiusMedium,
-                                    ),
-                                    border: Border.all(
-                                      color: Colors.grey.shade200,
-                                    ),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          const Icon(
-                                            Icons.rate_review_rounded,
-                                            size: 14,
-                                            color: AppTheme.primaryGreen,
-                                          ),
-                                          const SizedBox(width: 6),
-                                          Text(
-                                            'Catatan Guru PLH (${sub.verifiedBy ?? "PLH"}):',
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 11,
-                                              color: AppTheme.primaryDark,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        sub.notes!,
-                                        style: const TextStyle(
-                                          fontSize: 11,
-                                          color: Colors.black87,
-                                          fontStyle: FontStyle.italic,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      );
-                    }),
-                  const SizedBox(height: 32),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class WeeklyBarChart extends StatelessWidget {
-  final Map<String, double> scores;
-  const WeeklyBarChart({super.key, required this.scores});
-
-  @override
-  Widget build(BuildContext context) {
-    // Find the maximum score to highlight it
-    double maxScore = 0.0;
-    String maxDay = '';
-    scores.forEach((day, score) {
-      if (score > maxScore) {
-        maxScore = score;
-        maxDay = day;
+      if (images.isNotEmpty) {
+        _selectedImages.addAll(images);
+        if (_selectedImages.length > 5) {
+          _selectedImages.removeRange(5, _selectedImages.length);
+          notifyListeners();
+          return 'Maksimal foto yang dapat diunggah adalah 5.';
+        }
+        notifyListeners();
       }
-    });
+    } catch (e) {
+      return 'Gagal mengambil foto: $e';
+    }
+    return null;
+  }
 
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Row(
-              children: [
-                Icon(Icons.bar_chart_rounded, color: AppTheme.primaryGreen),
-                SizedBox(width: 8),
-                Text(
-                  'Grafik Piket Minggu Ini (Senin - Jumat)',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.primaryDark,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: scores.entries.map((entry) {
-                final day = entry.key;
-                final score = entry.value;
-                final isMax = day == maxDay && score > 0;
+  Future<String?> captureImage() async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 80,
+        maxWidth: 1080,
+      );
 
-                return Column(
-                  children: [
-                    // Score Text
-                    Text(
-                      score > 0 ? '${score.toInt()}%' : '0',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: isMax ? FontWeight.bold : FontWeight.normal,
-                        color: score > 0
-                            ? (isMax ? AppTheme.primaryGreen : Colors.black87)
-                            : Colors.grey,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    // Bar
-                    Container(
-                      height:
-                          120 *
-                          (score / 100).clamp(
-                            0.05,
-                            1.0,
-                          ), // Min height so it's visible as a tiny base if 0
-                      width: 32,
-                      decoration: BoxDecoration(
-                        gradient: score > 0
-                            ? (isMax
-                                  ? const LinearGradient(
-                                      begin: Alignment.bottomCenter,
-                                      end: Alignment.topCenter,
-                                      colors: [
-                                        Color(0xFF1B5E20),
-                                        Color(0xFF43A047),
-                                      ],
-                                    )
-                                  : const LinearGradient(
-                                      begin: Alignment.bottomCenter,
-                                      end: Alignment.topCenter,
-                                      colors: [
-                                        Color(0xFF43A047),
-                                        Color(0xFF81C784),
-                                      ],
-                                    ))
-                            : null,
-                        color: score == 0 ? Colors.grey.shade200 : null,
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(8),
-                        ),
-                        border: isMax
-                            ? Border.all(color: Colors.amber, width: 2)
-                            : null,
-                        boxShadow: isMax
-                            ? [
-                                BoxShadow(
-                                  color: Colors.amber.withValues(alpha: 0.3),
-                                  blurRadius: 6,
-                                  spreadRadius: 1,
-                                ),
-                              ]
-                            : null,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    // Day Label
-                    Text(
-                      day,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: isMax ? FontWeight.bold : FontWeight.w500,
-                        color: isMax ? AppTheme.primaryGreen : Colors.black54,
-                      ),
-                    ),
-                  ],
-                );
-              }).toList(),
-            ),
-          ],
-        ),
-      ),
-    );
+      if (image != null) {
+        if (_selectedImages.length >= 5) {
+          return 'Maksimal foto yang dapat diunggah adalah 5.';
+        } else {
+          _selectedImages.add(image);
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      return 'Gagal mengambil foto: $e';
+    }
+    return null;
+  }
+
+  void removeImage(int index) {
+    _selectedImages.removeAt(index);
+    notifyListeners();
+  }
+
+  Future<bool> submitPhotos(String token) async {
+    if (_selectedImages.length < 3) {
+      _errorMessage = 'Minimal 3 foto piket kelas harus diunggah.';
+      notifyListeners();
+      return false;
+    }
+
+    _isSubmitting = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final position = await locator.locationService.getCurrentPosition();
+      if (position == null) {
+        throw Exception(
+          'Gagal mendapatkan lokasi GPS Anda. Aktifkan GPS Anda.',
+        );
+      }
+
+      final imagePaths = _selectedImages.map((img) => img.path).toList();
+      final result = await _apiService.submitPhotos(
+        token,
+        imagePaths,
+        position.latitude,
+        position.longitude,
+      );
+
+      _aiScore = result['ai_score'];
+      final rawFindings = result['findings'];
+      if (rawFindings is List) {
+        _findings = rawFindings.map((f) => f.toString()).toList();
+      } else {
+        _findings = [];
+      }
+      _selectedImages.clear();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      return false;
+    } finally {
+      _isSubmitting = false;
+      notifyListeners();
+    }
+  }
+
+  void resetSubmission() {
+    _aiScore = null;
+    _findings = [];
+    _errorMessage = null;
+    notifyListeners();
+  }
+
+  bool _isDisposed = false;
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
+  }
+
+  @override
+  void notifyListeners() {
+    if (!_isDisposed) {
+      super.notifyListeners();
+    }
   }
 }
