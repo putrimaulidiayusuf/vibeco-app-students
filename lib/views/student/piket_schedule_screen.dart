@@ -35,6 +35,7 @@ class _PiketScheduleScreenState extends State<PiketScheduleScreen> {
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthService>(context, listen: false);
     final token = auth.token;
+    final loggedInNis = auth.user?.nis ?? '';
     final dashVm = Provider.of<DashboardViewModel>(context);
 
     // Reload data if needed
@@ -325,7 +326,7 @@ class _PiketScheduleScreenState extends State<PiketScheduleScreen> {
                           child: TabBarView(
                             children: [
                               _buildTodayDutyTab(dashVm),
-                              _buildScheduleContent(dashVm),
+                              _buildScheduleContent(dashVm, loggedInNis: loggedInNis),
                             ],
                           ),
                         ),
@@ -650,7 +651,7 @@ class _PiketScheduleScreenState extends State<PiketScheduleScreen> {
     );
   }
 
-  Widget _buildScheduleContent(DashboardViewModel vm) {
+  Widget _buildScheduleContent(DashboardViewModel vm, {String loggedInNis = ''}) {
     if (vm.myClassSchedule == null) return const SizedBox.shrink();
 
     final todayEnglish = vm.todayEnglish;
@@ -714,6 +715,9 @@ class _PiketScheduleScreenState extends State<PiketScheduleScreen> {
         final day = activeDays[index];
         final entries = grouped[day]!;
         final isToday = day.toLowerCase() == todayEnglish.toLowerCase();
+        // Highlight hari di mana siswa yang login ada dalam daftar piket
+        final isMyDuty = loggedInNis.isNotEmpty &&
+            entries.any((e) => e.studentNis == loggedInNis);
         final dayLabel = vm.translateDay(day);
 
         return TweenAnimationBuilder<double>(
@@ -731,7 +735,7 @@ class _PiketScheduleScreenState extends State<PiketScheduleScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(24),
-              border: isToday
+              border: isMyDuty
                   ? Border.all(
                       color: AppColors.primaryGreen.withValues(alpha: 0.5),
                       width: 2,
@@ -742,14 +746,14 @@ class _PiketScheduleScreenState extends State<PiketScheduleScreen> {
                     ),
               boxShadow: [
                 BoxShadow(
-                  color: isToday
+                  color: isMyDuty
                       ? AppColors.primaryGreen.withValues(alpha: 0.12)
                       : Colors.black.withValues(alpha: 0.04),
-                  blurRadius: isToday ? 16 : 12,
+                  blurRadius: isMyDuty ? 16 : 12,
                   offset: const Offset(0, 6),
                 ),
                 BoxShadow(
-                  color: isToday
+                  color: isMyDuty
                       ? AppColors.primaryGreen.withValues(alpha: 0.06)
                       : Colors.black.withValues(alpha: 0.02),
                   blurRadius: 24,
@@ -765,7 +769,7 @@ class _PiketScheduleScreenState extends State<PiketScheduleScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                     decoration: BoxDecoration(
-                      gradient: isToday
+                      gradient: isMyDuty
                           ? const LinearGradient(
                               colors: [Color(0xFFE8F5E9), Color(0xFFD4EDDA)],
                               begin: Alignment.centerLeft,
@@ -778,7 +782,7 @@ class _PiketScheduleScreenState extends State<PiketScheduleScreen> {
                             ),
                       border: Border(
                         bottom: BorderSide(
-                          color: isToday
+                          color: isMyDuty
                               ? AppColors.primaryGreen.withValues(alpha: 0.15)
                               : Colors.grey.shade100,
                           width: 1,
@@ -790,14 +794,14 @@ class _PiketScheduleScreenState extends State<PiketScheduleScreen> {
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            gradient: isToday
+                            gradient: isMyDuty
                                 ? const LinearGradient(
                                     colors: [Color(0xFF0F4D3A), Color(0xFF06241B)],
                                   )
                                 : null,
-                            color: isToday ? null : Colors.grey[200],
+                            color: isMyDuty ? null : Colors.grey[200],
                             shape: BoxShape.circle,
-                            boxShadow: isToday
+                            boxShadow: isMyDuty
                                 ? [
                                     BoxShadow(
                                       color: AppColors.primaryGreen.withValues(alpha: 0.25),
@@ -808,8 +812,8 @@ class _PiketScheduleScreenState extends State<PiketScheduleScreen> {
                                 : null,
                           ),
                           child: Icon(
-                            isToday ? Icons.today_rounded : Icons.calendar_view_day_rounded,
-                            color: isToday ? Colors.white : Colors.grey[500],
+                            isToday ? Icons.today_rounded : (isMyDuty ? Icons.person_pin_rounded : Icons.calendar_view_day_rounded),
+                            color: isMyDuty ? Colors.white : Colors.grey[500],
                             size: 18,
                           ),
                         ),
@@ -823,7 +827,7 @@ class _PiketScheduleScreenState extends State<PiketScheduleScreen> {
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
-                                  color: isToday ? const Color(0xFF06241B) : AppColors.emeraldDark,
+                                  color: isMyDuty ? const Color(0xFF06241B) : AppColors.emeraldDark,
                                   letterSpacing: 0.2,
                                 ),
                               ),
@@ -832,14 +836,14 @@ class _PiketScheduleScreenState extends State<PiketScheduleScreen> {
                                 '${entries.length} siswa bertugas',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: isToday ? AppColors.primaryGreen : Colors.grey[500],
-                                  fontWeight: isToday ? FontWeight.w600 : FontWeight.normal,
+                                  color: isMyDuty ? AppColors.primaryGreen : Colors.grey[500],
+                                  fontWeight: isMyDuty ? FontWeight.w600 : FontWeight.normal,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        if (isToday)
+                        if (isMyDuty)
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
@@ -859,13 +863,13 @@ class _PiketScheduleScreenState extends State<PiketScheduleScreen> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
-                                  Icons.star_rounded,
+                                  Icons.person_rounded,
                                   color: Colors.white,
                                   size: 12,
                                 ),
                                 SizedBox(width: 4),
                                 Text(
-                                  'HARI INI',
+                                  'PIKET SAYA',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 10,
@@ -886,17 +890,21 @@ class _PiketScheduleScreenState extends State<PiketScheduleScreen> {
                     final entry = mapEntry.value;
                     final isLast = i == entries.length - 1;
 
+                    // Cek apakah entry ini adalah siswa yang login
+                    final isMe = loggedInNis.isNotEmpty &&
+                        entry.studentNis == loggedInNis;
+
                     return Container(
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                       decoration: BoxDecoration(
-                        color: isToday && i % 2 == 0
+                        color: isMyDuty && i % 2 == 0
                             ? const Color(0xFFF8FCF8)
                             : Colors.white,
                         border: isLast
                             ? null
                             : Border(
                                 bottom: BorderSide(
-                                  color: isToday
+                                  color: isMyDuty
                                       ? AppColors.primaryGreen.withValues(alpha: 0.08)
                                       : Colors.grey.shade100,
                                   width: 1,
@@ -910,14 +918,14 @@ class _PiketScheduleScreenState extends State<PiketScheduleScreen> {
                             width: 40,
                             height: 40,
                             decoration: BoxDecoration(
-                              gradient: isToday
+                              gradient: isMyDuty
                                   ? const LinearGradient(
                                       colors: [Color(0xFF0F4D3A), Color(0xFF06241B)],
                                     )
                                   : null,
-                              color: isToday ? null : const Color(0xFFF0F2F0),
+                              color: isMyDuty ? null : const Color(0xFFF0F2F0),
                               shape: BoxShape.circle,
-                              boxShadow: isToday
+                              boxShadow: isMyDuty
                                   ? [
                                       BoxShadow(
                                         color: AppColors.primaryGreen.withValues(alpha: 0.2),
@@ -933,7 +941,7 @@ class _PiketScheduleScreenState extends State<PiketScheduleScreen> {
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
-                                  color: isToday ? Colors.white : AppColors.emeraldDark,
+                                  color: isMyDuty ? Colors.white : AppColors.emeraldDark,
                                 ),
                               ),
                             ),
@@ -943,14 +951,38 @@ class _PiketScheduleScreenState extends State<PiketScheduleScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  entry.studentName,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: isToday ? FontWeight.w600 : FontWeight.w500,
-                                    color: const Color(0xFF06241B),
-                                    letterSpacing: 0.1,
-                                  ),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        entry.studentName,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: isMyDuty ? FontWeight.w600 : FontWeight.w500,
+                                          color: const Color(0xFF06241B),
+                                          letterSpacing: 0.1,
+                                        ),
+                                      ),
+                                    ),
+                                    if (isMe) ...[
+                                      const SizedBox(width: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primaryGreen.withValues(alpha: 0.12),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Text(
+                                          'Saya',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.primaryGreen,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
                                 ),
                                 const SizedBox(height: 3),
                                 Text(
@@ -964,7 +996,7 @@ class _PiketScheduleScreenState extends State<PiketScheduleScreen> {
                               ],
                             ),
                           ),
-                          if (isToday)
+                          if (isMyDuty)
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
