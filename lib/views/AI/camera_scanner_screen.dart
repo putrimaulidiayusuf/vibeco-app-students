@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:image/image.dart' as img;
+import 'package:path_provider/path_provider.dart';
 import '../../core/services/onnx_predictor.dart';
 import '../../core/theme/app_theme.dart';
 
@@ -122,7 +123,7 @@ class _CameraScannerScreenState extends State<CameraScannerScreen> {
         height: cropSize,
       );
 
-      final tempDir = Directory.systemTemp;
+      final tempDir = await getTemporaryDirectory();
       final tempFile = File(
           '${tempDir.path}/scan_frame_${DateTime.now().millisecondsSinceEpoch}.jpg');
       await tempFile.writeAsBytes(img.encodeJpg(cropped, quality: 90));
