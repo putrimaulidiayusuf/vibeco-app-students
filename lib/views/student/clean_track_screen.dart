@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
@@ -18,7 +17,6 @@ class CleanTrackScreen extends StatefulWidget {
 }
 
 class _CleanTrackScreenState extends State<CleanTrackScreen> {
-  DateTime? _selectedDateFilter;
 
   String _formatDateIndonesian(String dateStr) {
     try {
@@ -108,185 +106,6 @@ class _CleanTrackScreenState extends State<CleanTrackScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Future<DateTime?> _showDateInputDialog(BuildContext context, DateTime? initialDate) async {
-    final dayController = TextEditingController(text: initialDate?.day.toString() ?? '');
-    final monthController = TextEditingController(text: initialDate?.month.toString() ?? '');
-    final yearController = TextEditingController(text: initialDate?.year.toString() ?? '');
-    final formKey = GlobalKey<FormState>();
-
-    return showDialog<DateTime>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Row(
-            children: [
-              Icon(Icons.calendar_today_rounded, color: AppColors.primaryGreen),
-              SizedBox(width: 10),
-              Text(
-                'Cari Tanggal',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.emeraldDark,
-                ),
-              ),
-            ],
-          ),
-          content: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Masukkan tanggal, bulan, dan tahun pencarian:',
-                  style: TextStyle(fontSize: 13, color: Colors.black54),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    // Hari
-                    Expanded(
-                      child: TextFormField(
-                        controller: dayController,
-                        keyboardType: TextInputType.number,
-                        maxLength: 2,
-                        textAlign: TextAlign.center,
-                        decoration: InputDecoration(
-                          counterText: '',
-                          labelText: 'Hari (DD)',
-                          labelStyle: const TextStyle(fontSize: 12),
-                          hintText: 'e.g. 15',
-                          hintStyle: TextStyle(color: Colors.grey[400], fontSize: 13),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppColors.primaryGreen, width: 2),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-                        ),
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) return 'Kosong';
-                          final val = int.tryParse(value);
-                          if (val == null || val < 1 || val > 31) return '1-31';
-                          return null;
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    // Bulan
-                    Expanded(
-                      child: TextFormField(
-                        controller: monthController,
-                        keyboardType: TextInputType.number,
-                        maxLength: 2,
-                        textAlign: TextAlign.center,
-                        decoration: InputDecoration(
-                          counterText: '',
-                          labelText: 'Bulan (MM)',
-                          labelStyle: const TextStyle(fontSize: 12),
-                          hintText: 'e.g. 12',
-                          hintStyle: TextStyle(color: Colors.grey[400], fontSize: 13),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppColors.primaryGreen, width: 2),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-                        ),
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) return 'Kosong';
-                          final val = int.tryParse(value);
-                          if (val == null || val < 1 || val > 12) return '1-12';
-                          return null;
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    // Tahun
-                    Expanded(
-                      child: TextFormField(
-                        controller: yearController,
-                        keyboardType: TextInputType.number,
-                        maxLength: 4,
-                        textAlign: TextAlign.center,
-                        decoration: InputDecoration(
-                          counterText: '',
-                          labelText: 'Tahun (YYYY)',
-                          labelStyle: const TextStyle(fontSize: 11),
-                          hintText: 'e.g. 2026',
-                          hintStyle: TextStyle(color: Colors.grey[400], fontSize: 13),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppColors.primaryGreen, width: 2),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-                        ),
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) return 'Kosong';
-                          final val = int.tryParse(value);
-                          if (val == null || val < 2000 || val > DateTime.now().year + 5) {
-                            return 'Valid';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Batal', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryGreen,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              ),
-              onPressed: () {
-                if (formKey.currentState!.validate()) {
-                  final day = int.parse(dayController.text);
-                  final month = int.parse(monthController.text);
-                  final year = int.parse(yearController.text);
-                  
-                  // Check if it's a valid date
-                  try {
-                    final date = DateTime(year, month, day);
-                    if (date.day != day || date.month != month || date.year != year) {
-                      throw const FormatException('Tanggal tidak valid');
-                    }
-                    Navigator.pop(context, date);
-                  } catch (_) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Tanggal yang dimasukkan tidak valid')),
-                    );
-                  }
-                }
-              },
-              child: const Text('Terapkan', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            ),
-          ],
-        );
-      },
     );
   }
 
@@ -586,94 +405,10 @@ class _CleanTrackScreenState extends State<CleanTrackScreen> {
       );
     }
 
-    final filteredSubmissions = viewModel.submissions.where((sub) {
-      if (_selectedDateFilter == null) return true;
-      try {
-        final date = DateTime.parse(sub.date).toLocal();
-        return date.year == _selectedDateFilter!.year &&
-               date.month == _selectedDateFilter!.month &&
-               date.day == _selectedDateFilter!.day;
-      } catch (_) {
-        return false;
-      }
-    }).toList();
+    final filteredSubmissions = viewModel.submissions;
 
     return Column(
       children: [
-        // Premium capsule search/filter bar
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.calendar_today_rounded, size: 16, color: AppColors.primaryGreen),
-                  const SizedBox(width: 8),
-                  Text(
-                    _selectedDateFilter == null
-                        ? 'Menampilkan semua laporan'
-                        : 'Filter: ${DateFormat('dd MMMM yyyy', 'id_ID').format(_selectedDateFilter!)}',
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w600,
-                      color: _selectedDateFilter == null ? Colors.grey[700] : AppColors.primaryGreen,
-                    ),
-                  ),
-                ],
-              ),
-              GestureDetector(
-                onTap: () async {
-                  if (_selectedDateFilter != null) {
-                    setState(() {
-                      _selectedDateFilter = null;
-                    });
-                  } else {
-                    final date = await _showDateInputDialog(context, _selectedDateFilter ?? DateTime.now());
-                    if (date != null) {
-                      setState(() {
-                        _selectedDateFilter = date;
-                      });
-                    }
-                  }
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: _selectedDateFilter == null
-                        ? AppColors.primaryGreen.withValues(alpha: 0.1)
-                        : Colors.red.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        _selectedDateFilter == null
-                            ? Icons.date_range_rounded
-                            : Icons.clear_rounded,
-                        size: 16,
-                        color: _selectedDateFilter == null ? AppColors.primaryGreen : Colors.red,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        _selectedDateFilter == null ? 'Cari Tanggal' : 'Hapus Filter',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: _selectedDateFilter == null ? AppColors.primaryGreen : Colors.red,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
         Expanded(
           child: RefreshIndicator(
             onRefresh: () async {
@@ -712,21 +447,8 @@ class _CleanTrackScreenState extends State<CleanTrackScreen> {
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              'Tidak ditemukan laporan pada tanggal tersebut.',
+                              'Belum ada laporan piket yang dikirimkan.',
                               style: TextStyle(fontSize: 13, color: Colors.grey[600]),
-                            ),
-                            const SizedBox(height: 16),
-                            TextButton.icon(
-                              onPressed: () {
-                                setState(() {
-                                  _selectedDateFilter = null;
-                                });
-                              },
-                              icon: const Icon(Icons.refresh_rounded, color: AppColors.primaryGreen),
-                              label: const Text(
-                                'Reset Pencarian',
-                                style: TextStyle(color: AppColors.primaryGreen, fontWeight: FontWeight.bold),
-                              ),
                             ),
                           ],
                         ),

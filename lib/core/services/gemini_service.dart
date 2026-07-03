@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class GeminiService {
-  static const String _apiKey = 'AQ.Ab8RN6Jn4zscvMYBUc2iz9KnPiruFKWbTzFaThDcahwoSTlDYw';
+  static const String _apiKey = 'YOUR_API_KEY';
   static const String _baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
 
   /// Sends the current message along with history to Gemini API.

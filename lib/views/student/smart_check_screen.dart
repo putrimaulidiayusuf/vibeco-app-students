@@ -46,7 +46,7 @@ class _SmartCheckScreenState extends State<SmartCheckScreen> {
               ],
             ),
             content: const Text(
-              'Aplikasi VibeCo memerlukan izin Lokasi (untuk memverifikasi kehadiran di geofence sekolah) dan Kamera (bila Anda mengunggah bukti foto piket).',
+              'Aplikasi VibEco memerlukan izin Lokasi (untuk memverifikasi kehadiran di geofence sekolah) dan Kamera (bila Anda mengunggah bukti foto piket).',
             ),
             actions: [
               TextButton(
@@ -363,7 +363,7 @@ class _SmartCheckScreenState extends State<SmartCheckScreen> {
                 children: [
                   // Header
                   Text(
-                    'VibeCo SmartCheck',
+                    'VibEco SmartCheck',
                     style: Theme.of(context).textTheme.headlineMedium,
                     textAlign: TextAlign.center,
                   ),

@@ -53,7 +53,7 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
       } else {
         // Welcome message
         _addAiMessage(
-          "Halo! Saya PRABA AI, Asisten Cerdas Kebersihan VibeCo.\n\n"
+          "Halo! Saya PRABA AI, Asisten Cerdas Kebersihan VibEco.\n\n"
           "Kirimkan foto sampah dari Kamera Pemindai (real-time) atau Galeri Anda untuk mengetahui kategori sampah, cara membuang, dampak lingkungan, serta cara mendaur ulangnya!"
         );
       }
@@ -290,7 +290,7 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
               final prefs = await SharedPreferences.getInstance();
               await prefs.remove(_chatKey());
               _addAiMessage(
-                "Halo! Saya *PRABA AI*, Asisten Cerdas Kebersihan VibeCo.\n\n"
+                "Halo! Saya *PRABA AI*, Asisten Cerdas Kebersihan VibEco.\n\n"
                 "Kirimkan foto sampah dari Kamera Pemindai atau Galeri Anda untuk mendeteksi kategori dan mendapatkan panduan pengolahannya!"
               );
             },
