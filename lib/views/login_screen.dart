@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -315,6 +316,10 @@ class _LoginScreenState extends State<LoginScreen>
                                                     _identifierController,
                                                 keyboardType:
                                                     TextInputType.number,
+                                                inputFormatters: [
+                                                  FilteringTextInputFormatter
+                                                      .digitsOnly,
+                                                ],
                                                 decoration: InputDecoration(
                                                   labelText:
                                                       'NIS (Nomor Induk Siswa)',
