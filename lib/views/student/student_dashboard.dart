@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:video_player/video_player.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/services/auth_service.dart';
 import '../AI/praba_ai_screen.dart';
@@ -310,7 +311,7 @@ class _StudentDashboardState extends State<StudentDashboard>
                         title: 'PRABA AI',
                         subtitle: 'Tanya seputar lingkungan pada PRABA sekarang!',
                         buttonText: 'Coba sekarang!',
-                        imagePath: 'assets/images/maskot.png',
+                        useVideo: true,
                         onTap: () => Navigator.push(
                           context,
                           _slideRoute(const PrabaAiScreen(asRoute: true)),
@@ -409,12 +410,15 @@ class _StudentDashboardState extends State<StudentDashboard>
     required String title,
     required String subtitle,
     required String buttonText,
-    required String imagePath,
     required VoidCallback onTap,
+    String imagePath = '',
     double imageSize = 120,
+    bool useVideo = false,
   }) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: useVideo
+          ? const EdgeInsets.symmetric(horizontal: 20, vertical: 0)
+          : const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -433,67 +437,77 @@ class _StudentDashboardState extends State<StudentDashboard>
       child: Row(
         children: [
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.emeraldDark,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey[600],
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                GestureDetector(
-                  onTap: onTap,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 10,
+            child: Padding(
+              padding: useVideo
+                  ? const EdgeInsets.only(top: 14, bottom: 10)
+                  : EdgeInsets.zero,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.emeraldDark,
                     ),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [AppColors.emeraldMid, AppColors.primaryGreen],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey[600],
+                      height: 1.4,
+                    ),
+                  ),
+                  SizedBox(height: useVideo ? 24 : 14),
+                  GestureDetector(
+                    onTap: onTap,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
                       ),
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                    child: Text(
-                      buttonText,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [AppColors.emeraldMid, AppColors.primaryGreen],
+                        ),
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      child: Text(
+                        buttonText,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Image.asset(
-              imagePath,
-              width: imageSize,
-              height: imageSize,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => SizedBox(
-                width: imageSize,
-                height: imageSize,
+                ],
               ),
             ),
           ),
+          const SizedBox(width: 16),
+          // Hanya PRABA AI card yang pakai video
+          if (useVideo)
+            _MaskotVideoPlayer(size: imageSize)
+          else
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.asset(
+                imagePath,
+                width: imageSize,
+                height: imageSize,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => SizedBox(
+                  width: imageSize,
+                  height: imageSize,
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -857,4 +871,61 @@ class _NotchNavbarPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+// ─── WIDGET VIDEO MASKOT ───
+class _MaskotVideoPlayer extends StatefulWidget {
+  final double size;
+  const _MaskotVideoPlayer({this.size = 140});
+
+  @override
+  State<_MaskotVideoPlayer> createState() => _MaskotVideoPlayerState();
+}
+
+class _MaskotVideoPlayerState extends State<_MaskotVideoPlayer> {
+  late VideoPlayerController _controller;
+  bool _initialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = VideoPlayerController.asset(
+      'assets/maskot_video_animation.mp4',
+    );
+    _controller.initialize().then((_) {
+      if (mounted) {
+        setState(() => _initialized = true);
+        _controller.setLooping(true);
+        _controller.setVolume(0);
+        _controller.play();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_initialized) {
+      return SizedBox(
+        width: widget.size,
+        height: widget.size,
+        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      );
+    }
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: SizedBox(
+        width: widget.size,
+        child: AspectRatio(
+          aspectRatio: _controller.value.aspectRatio,
+          child: VideoPlayer(_controller),
+        ),
+      ),
+    );
+  }
 }
