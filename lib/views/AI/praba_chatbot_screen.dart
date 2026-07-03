@@ -9,6 +9,7 @@ import '../../core/services/onnx_predictor.dart';
 import '../../core/services/gemini_service.dart';
 import '../../core/theme/app_theme.dart';
 import 'camera_scanner_screen.dart';
+
 class PrabaChatBotScreen extends StatefulWidget {
   const PrabaChatBotScreen({super.key});
 
@@ -36,7 +37,7 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
   /// Key unik per akun berdasarkan user ID
   String _chatKey() {
     final auth = Provider.of<AuthService>(context, listen: false);
-    final userId = auth.user?.id?.toString() ?? 'guest';
+    final userId = auth.user?.id.toString() ?? 'guest';
     return 'praba_chat_history_$userId';
   }
 

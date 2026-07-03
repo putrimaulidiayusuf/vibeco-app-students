@@ -37,6 +37,9 @@ flutter:
     - assets/images/
     - assets/vibecomodel.onnx
     - assets/maskot_video_animation.mp4
+    - assets/maskot_bangga_video.mp4
+    - assets/maskot_marah_video.mp4
+    - assets/aku_praba.mp4
 
 flutter_native_splash:
   color: "#06241B"
