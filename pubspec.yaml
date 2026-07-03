@@ -21,6 +21,7 @@ dependencies:
   flutter_native_splash: ^2.4.8
   permission_handler: ^11.0.0
   flutter_onnxruntime: ^1.6.0
+  video_player: ^2.11.1
 
 dev_dependencies:
   flutter_test:
