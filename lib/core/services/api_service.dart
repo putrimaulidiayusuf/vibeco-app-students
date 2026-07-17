@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_config.dart';
 import '../models/user_model.dart';
 import '../models/submission_model.dart';
@@ -109,11 +110,15 @@ class ApiService {
     final timeStr = DateFormat('HH:mm').format(now);
     final isoStr = now.toIso8601String();
 
+    final prefs = await SharedPreferences.getInstance();
+    final geminiKey = prefs.getString('gemini_api_key') ?? '';
+
     request.headers.addAll({
       'Accept': 'application/json',
       'Authorization': 'Bearer $token',
       'X-Timezone': 'Asia/Jakarta',
       'X-Client-Time': isoStr,
+      if (geminiKey.isNotEmpty) 'X-Gemini-API-Key': geminiKey,
     });
 
     request.fields['latitude'] = latitude.toString();

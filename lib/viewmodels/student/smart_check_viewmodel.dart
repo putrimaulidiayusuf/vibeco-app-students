@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/models/settings_model.dart';
 import '../../core/models/piket_team_model.dart';
 import '../../core/models/submission_model.dart';
@@ -19,6 +20,9 @@ class SmartCheckViewModel extends ChangeNotifier {
 
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
+
+  bool _hasGeminiKey = false;
+  bool get hasGeminiKey => _hasGeminiKey;
 
   AppSettings? _settings;
   AppSettings? get settings => _settings;
@@ -79,7 +83,8 @@ class SmartCheckViewModel extends ChangeNotifier {
       _isWithinTimeWindow &&
       !_isHoliday &&
       _isOnDutyToday &&
-      !_isAlreadySubmittedToday;
+      !_isAlreadySubmittedToday &&
+      _hasGeminiKey;
 
   Future<void> loadStatusAndConfig(String token) async {
     _isLoading = true;
@@ -88,9 +93,13 @@ class SmartCheckViewModel extends ChangeNotifier {
     _findings = [];
     _isAlreadySubmittedToday = false;
     _submittedByName = null;
+    _hasGeminiKey = false;
     notifyListeners();
 
     try {
+      final prefs = await SharedPreferences.getInstance();
+      _hasGeminiKey = (prefs.getString('gemini_api_key') ?? '').isNotEmpty;
+
       // 1. Get Settings & Holidays
       _settings = await _apiService.getSettings(token);
       final holidays = await _apiService.getHolidays(token);
