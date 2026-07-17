@@ -24,14 +24,28 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
   final ImagePicker _picker = ImagePicker();
   final GeminiService _geminiService = GeminiService();
   bool _isAiResponding = false;
+  bool _hasGeminiKey = false;
 
   @override
   void initState() {
     super.initState();
+    _checkGeminiKey();
     // Tunggu frame pertama agar context tersedia untuk Provider
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadChatHistory();
     });
+  }
+
+  Future<void> _checkGeminiKey() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = prefs.getString('gemini_api_key') ?? '';
+      setState(() {
+        _hasGeminiKey = key.isNotEmpty;
+      });
+    } catch (e) {
+      debugPrint("Failed to check Gemini API Key: $e");
+    }
   }
 
   /// Key unik per akun berdasarkan user ID
@@ -439,10 +453,12 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
                   ],
                 ),
               ),
-              child: Column(
-                children: [
-                  Expanded(
-                    child: ListView.builder(
+              child: !_hasGeminiKey
+                  ? _buildLockedWidget()
+                  : Column(
+                      children: [
+                        Expanded(
+                          child: ListView.builder(
                       controller: _scrollController,
                       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
                       itemCount: _messages.length,
@@ -937,6 +953,116 @@ class _PrabaChatBotScreenState extends State<PrabaChatBotScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLockedWidget() {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Container(
+          padding: const EdgeInsets.all(28),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+            border: Border.all(
+              color: AppTheme.primaryGreen.withValues(alpha: 0.1),
+              width: 1.5,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.asset(
+                'assets/images/maskotbingung.png',
+                width: 130,
+                height: 130,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.orange.withValues(alpha: 0.2),
+                    width: 1,
+                  ),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.lock_rounded, size: 14, color: Colors.orange),
+                    SizedBox(width: 6),
+                    Text(
+                      'AI CHATBOT TERKUNCI',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.orange,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'API Key Gemini Belum Diatur',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.primaryDark,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Untuk mulai mengobrol dengan PRABA AI, Anda harus mengonfigurasi API Key Gemini Anda sendiri terlebih dahulu di halaman Profil.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.black54,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 28),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Silakan masuk ke menu Profil untuk mengatur API Key Gemini Anda.'),
+                        duration: Duration(seconds: 3),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.arrow_back_rounded, size: 18),
+                  label: const Text('Kembali ke Profil'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryGreen,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

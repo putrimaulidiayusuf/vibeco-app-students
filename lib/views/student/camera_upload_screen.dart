@@ -517,6 +517,10 @@ class _CameraUploadScreenState extends State<CameraUploadScreen> {
                               'Jadwal piket Anda hari ini',
                               statusVm.isOnDutyToday,
                             ),
+                            _buildStatusIndicator(
+                              'API Key Gemini terkonfigurasi di Profil',
+                              statusVm.hasGeminiKey,
+                            ),
                           ],
                           const SizedBox(height: 24),
                           SizedBox(
