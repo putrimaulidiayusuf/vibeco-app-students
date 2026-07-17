@@ -87,7 +87,7 @@ class AccessDeniedScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Aplikasi ini dirancang khusus untuk Siswa VibeCo.\n\nAkun Guru / PLH Anda tidak memiliki izin untuk mengakses aplikasi ini. Silakan masuk menggunakan akun Siswa.',
+                        'Aplikasi ini dirancang khusus untuk Siswa VibEco.\n\nAkun Guru / PLH Anda tidak memiliki izin untuk mengakses aplikasi ini. Silakan masuk menggunakan akun Siswa.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 14,

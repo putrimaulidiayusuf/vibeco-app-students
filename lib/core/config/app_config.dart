@@ -15,7 +15,7 @@ class AppConfig {
   }
 
   // App metadata
-  static const String appName = 'VibeCo';
+  static const String appName = 'VibEco';
   static const String appVersion = '0.1.0';
   static const String appTagline = 'Smart School Cleanliness';
 

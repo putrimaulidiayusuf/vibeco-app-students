@@ -885,6 +885,7 @@ class _MaskotVideoPlayer extends StatefulWidget {
 class _MaskotVideoPlayerState extends State<_MaskotVideoPlayer> {
   late VideoPlayerController _controller;
   bool _initialized = false;
+  bool _hasError = false;
 
   @override
   void initState() {
@@ -894,10 +895,20 @@ class _MaskotVideoPlayerState extends State<_MaskotVideoPlayer> {
     );
     _controller.initialize().then((_) {
       if (mounted) {
-        setState(() => _initialized = true);
         _controller.setLooping(true);
-        _controller.setVolume(0);
+        _controller.setVolume(0.0);
         _controller.play();
+        setState(() {
+          _initialized = true;
+          _hasError = false;
+        });
+      }
+    }).catchError((error) {
+      debugPrint("Error initializing dashboard mascot video: $error");
+      if (mounted) {
+        setState(() {
+          _hasError = true;
+        });
       }
     });
   }
@@ -910,6 +921,17 @@ class _MaskotVideoPlayerState extends State<_MaskotVideoPlayer> {
 
   @override
   Widget build(BuildContext context) {
+    if (_hasError) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Image.asset(
+          'assets/images/maskot.png',
+          width: widget.size,
+          height: widget.size,
+          fit: BoxFit.cover,
+        ),
+      );
+    }
     if (!_initialized) {
       return SizedBox(
         width: widget.size,

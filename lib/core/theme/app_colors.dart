@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Centralized color palette for VibeCo app.
+/// Centralized color palette for VibEco app.
 class AppColors {
   AppColors._();
 
